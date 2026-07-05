@@ -11,8 +11,8 @@
         h3 { color: #242424; margin-top: 30px; font-size: 1.2rem; font-weight: 600; }
         .form-group { margin-bottom: 25px; }
         label { display: block; font-weight: 600; margin-bottom: 8px; color: #444; font-size: 0.95rem; }
-        input[type="email"], select { width: 100%; padding: 12px; border: 1px solid #cccccc; border-radius: 4px; box-sizing: border-box; font-size: 15px; background-color: #ffffff; color: #333; transition: border-color 0.15s ease; }
-        input[type="email"]:focus, select:focus { border-color: #ba0c2f; outline: none; }
+        input[type="email"], input[type="password"], select { width: 100%; padding: 12px; border: 1px solid #cccccc; border-radius: 4px; box-sizing: border-box; font-size: 15px; background-color: #ffffff; color: #333; transition: border-color 0.15s ease; }
+        input[type="email"]:focus, input[type="password"]:focus, select:focus { border-color: #ba0c2f; outline: none; }
         button { background: #ba0c2f; color: #ffffff; border: none; padding: 14px 24px; font-size: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; transition: background 0.15s ease; }
         button:hover { background: #930a25; }
         .hidden { display: none; }
@@ -32,10 +32,19 @@
         .btn-skip { background: #6c757d; flex: 1; }
         .btn-skip:hover { background: #5a6268; }
 
-        /* Meta Badges Design */
         .badge-container { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; white-space: nowrap; }
         .meta-tag { font-weight: 600; color:#ffffff; background: #000000; padding: 6px 14px; border-radius: 4px; font-size: 0.85rem; border: 1px solid #d0daf0; }
         .stats-badge { font-weight: 600; color:#ba0c2f; background: #fff5f5; padding: 6px 14px; border-radius: 4px; font-size: 0.85rem; border: 1px solid #ffcdd2; }
+
+        .leaderboard-wrapper { margin-top: 35px; border-top: 1px solid #e5e5e5; padding-top: 25px; }
+        .leaderboard-wrapper h3 { margin-top: 0; margin-bottom: 15px; font-size: 1.15rem; color: #242424; display: flex; align-items: center; gap: 6px; }
+        .leaderboard-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border: 1px solid #eee; background-color: #fff; }
+        .leaderboard-table th { text-align: left; padding: 10px; background: #f8f9fa; color: #444; font-weight: 600; border-bottom: 2px solid #e5e5e5; }
+        .leaderboard-table td { padding: 10px; border-bottom: 1px solid #eee; color: #555; }
+        .leaderboard-table tr:nth-child(1) td { font-weight: 700; color: #ba0c2f; background: #fffdfd; }
+        .rank-index { width: 45px; font-weight: 600; text-align: center; color: #777; }
+        .count-column { text-align: right; padding-right: 15px !important; font-weight: 600; }
+        .text-center { text-align: center; color: #888; padding: 20px !important; }
     </style>
 </head>
 <body>
@@ -43,17 +52,48 @@
 <div class="container">
     <div id="loginScreen">
         <h2>IEEE SSCS Evaluation Portal Login</h2>
-        <div class="form-group">
-            <label for="evaluatorEmail">Registered Email Address:</label>
-            <input type="email" id="evaluatorEmail" placeholder="name@ieee.org">
+        
+        <!-- Step 1 input wrapper -->
+        <div id="emailStep">
+            <div class="form-group">
+                <label for="evaluatorEmail">Registered Email Address:</label>
+                <input type="email" id="evaluatorEmail" placeholder="name@ieee.org">
+            </div>
+            <button onclick="handleVerifyEmail()">Continue</button>
         </div>
-        <button onclick="handleLogin()">Sign In</button>
+
+        <!-- Step 2 hidden input wrapper -->
+        <div id="passwordStep" class="hidden">
+            <div class="form-group">
+                <label id="passwordLabel" for="evaluatorPassword">Password:</label>
+                <input type="password" id="evaluatorPassword" placeholder="••••••••">
+            </div>
+            <button id="loginBtn" onclick="handleLogin()">Sign In</button>
+        </div>
+
+        <div class="leaderboard-wrapper">
+            <h3>🏆 Evaluators Leaderboard</h3>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th class="rank-index">Rank</th>
+                        <th>Name</th>
+                        <th>Country</th>
+                        <th class="count-column">Videos Rated</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <tr>
+                        <td colspan="4" class="text-center">Loading current evaluator standings...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div id="evaluationScreen" class="hidden">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 20px;">
             <h2 id="projectTitle" style="font-size: 1.45rem; line-height: 1.3; border: none; padding: 0; margin: 0;">Project Loading...</h2>
-            
             <div class="badge-container">
                 <span id="welcomeUser" class="meta-tag"></span>
                 <span id="userStatsCapsule" class="stats-badge">Videos Rated: 0</span>
@@ -67,7 +107,7 @@
         <h3>Marking Rubric Scoring</h3>
         
         <div class="rubric-section">
-            <label>Adherence to Rules (Requirements Compliance)</label>
+            <label>3. Adherence to Rules (Requirements Compliance)</label>
             <select id="critRules" onchange="calculateTotalScore()">
                 <option value="1">1pt: Violated several contest rules (e.g., wrong components)</option>
                 <option value="2">2pt: Violated one rule (e.g., one extra component)</option>
@@ -76,7 +116,7 @@
         </div>
 
         <div class="rubric-section">
-            <label>Technical Content (Electronics / Systems Integration)</label>
+            <label>1. Technical Content (Electronics / Systems Integration)</label>
             <select id="critTechnical" onchange="calculateTotalScore()">
                 <option value="1">1pt: Doesn't address the theme, no ingenuity, no notable technical achievement</option>
                 <option value="2">2pt: Somewhat addresses the theme, but lacks ingenuity and minimal technical achievement</option>
@@ -86,7 +126,7 @@
         </div>
 
         <div class="rubric-section">
-            <label>Presentation Quality (Clarity / Video Enjoyment)</label>
+            <label>2. Presentation Quality (Clarity / Video Enjoyment)</label>
             <select id="critPresentation" onchange="calculateTotalScore()">
                 <option value="1">1pt: Unclear, rushed, doesn't communicate the project's achievements</option>
                 <option value="2">2pt: Somewhat clear but struggles to effectively communicate achievements</option>
@@ -96,7 +136,7 @@
         </div>
 
         <div class="bonus-section">
-            <label style="color: #242424;">Recommended Sub-Prize Nominations</label>
+            <label style="color: #242424;">4. Recommended Sub-Prize Nominations</label>
             <div class="checkbox-container">
                 <label><input type="checkbox" class="bonusCheck"> Community Impact</label>
                 <label><input type="checkbox" class="bonusCheck"> Technical Excellence</label>
@@ -130,43 +170,74 @@
     let currentEmail = "";
     let currentActiveProjectId = "";
 
-    function processEmbedLink(url) {
-        if (!url) return "";
-        let videoId = "";
+    document.addEventListener("DOMContentLoaded", loadLeaderboard);
+
+    async function loadLeaderboard() {
+        const tbody = document.getElementById('leaderboardBody');
         try {
-            url = url.trim();
-            if (url.includes("youtu.be/")) {
-                videoId = url.split("youtu.be/")[1].split(/[?#]/)[0];
-            } else if (url.includes("v=")) {
-                videoId = url.split("v=")[1].split("&")[0];
-            } else if (url.includes("embed/")) {
-                videoId = url.split("embed/")[1].split(/[?#]/)[0];
+            let res = await fetch(`${API_URL}?action=getLeaderboard`);
+            let json = await res.json();
+            if (json.status === "success" && json.data.length > 0) {
+                tbody.innerHTML = json.data.map((row, idx) => `
+                    <tr>
+                        <td class="rank-index">${idx + 1}</td>
+                        <td>${row.name}</td>
+                        <td>${row.country || '—'}</td>
+                        <td class="count-column">${row.count}</td>
+                    </tr>
+                `).join('');
             } else {
-                return url;
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center">No evaluations have been submitted yet.</td></tr>`;
             }
-            videoId = videoId.replace(/[^a-zA-Z0-9_-]/g, '');
-            return `https://www.youtube.com/embed/${videoId}?rel=0`;
         } catch (e) {
-            console.error(e);
-            return url;
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color: #ba0c2f;">Failed to sync current leaderboard metrics.</td></tr>`;
         }
     }
 
-    async function handleLogin() {
+    // Step 1: Check if email exists and if they are a first time or returning user
+    async function handleVerifyEmail() {
         currentEmail = document.getElementById('evaluatorEmail').value.trim();
         if(!currentEmail) return alert("Please type your email address.");
 
         try {
-            let res = await fetch(`${API_URL}?action=login&email=${encodeURIComponent(currentEmail)}`);
+            let res = await fetch(`${API_URL}?action=checkEmailStatus&email=${encodeURIComponent(currentEmail)}`);
+            let json = await res.json();
+            
+            if (json.status === "success") {
+                document.getElementById('emailStep').classList.add('hidden');
+                document.getElementById('passwordStep').classList.remove('hidden');
+                
+                const label = document.getElementById('passwordLabel');
+                const btn = document.getElementById('loginBtn');
+                
+                if (!json.hasPassword) {
+                    label.innerText = "Create a New Password for Future Logins:";
+                    btn.innerText = "Register Password & Sign In";
+                } else {
+                    label.innerText = "Enter Your Password:";
+                    btn.innerText = "Sign In";
+                }
+            } else {
+                alert(json.message); // Invalid user warning
+            }
+        } catch(e) {
+            alert("Error checking account registration status.");
+        }
+    }
+
+    // Step 2: Finalize login by checking or saving the password match
+    async function handleLogin() {
+        const password = document.getElementById('evaluatorPassword').value.trim();
+        if(!password) return alert("Please specify a password.");
+
+        try {
+            let res = await fetch(`${API_URL}?action=login&email=${encodeURIComponent(currentEmail)}&password=${encodeURIComponent(password)}`);
             let json = await res.json();
             
             if (json.status === "success") {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('welcomeUser').innerText = `${json.name} (${json.country})`;
-                
-                // Update tracker counter upon successful login initialization
                 document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.ratedCount || 0}`;
-                
                 fetchNextVideo();
             } else {
                 alert(json.message);
@@ -176,38 +247,45 @@
         }
     }
 
+    function processEmbedLink(url) {
+        if (!url) return "";
+        let videoId = "";
+        try {
+            url = url.trim();
+            if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1].split(/[?#]/)[0];
+            else if (url.includes("v=")) videoId = url.split("v=")[1].split("&")[0];
+            else if (url.includes("embed/")) videoId = url.split("embed/")[1].split(/[?#]/)[0];
+            else return url;
+            return `https://www.youtube.com/embed/${videoId.replace(/[^a-zA-Z0-9_-]/g, '')}?rel=0`;
+        } catch (e) { return url; }
+    }
+
     async function fetchNextVideo() {
         try {
             let res = await fetch(`${API_URL}?action=getNextVideo&email=${encodeURIComponent(currentEmail)}`);
             let json = await res.json();
-            
             if (json.status === "success" && json.videoFound) {
                 currentActiveProjectId = json.data.projectId.toString().trim();
                 document.getElementById('projectTitle').innerText = json.data.projectName;
                 document.getElementById('videoPlayer').src = processEmbedLink(json.data.videoUrl);
-                
                 document.getElementById('critTechnical').value = "1";
                 document.getElementById('critPresentation').value = "1";
                 document.getElementById('critRules').value = "1";
                 document.querySelectorAll('.bonusCheck').forEach(cb => cb.checked = false);
                 calculateTotalScore();
-
                 document.getElementById('emptyScreen').classList.add('hidden');
                 document.getElementById('evaluationScreen').classList.remove('hidden');
             } else {
                 document.getElementById('evaluationScreen').classList.add('hidden');
                 document.getElementById('emptyScreen').classList.remove('hidden');
             }
-        } catch(e) {
-            alert("Error retrieving database video payload records.");
-        }
+        } catch(e) { alert("Error retrieving database video payload records."); }
     }
 
     function calculateTotalScore() {
         let tech = Number(document.getElementById('critTechnical').value);
         let pres = Number(document.getElementById('critPresentation').value);
         let rule = Number(document.getElementById('critRules').value);
-        
         let grandTotal = tech + pres + rule;
         document.getElementById('aggregateScore').innerText = grandTotal;
         return grandTotal;
@@ -216,7 +294,6 @@
     async function submitEvaluation() {
         let scoreValue = calculateTotalScore();
         const checkboxes = document.querySelectorAll('.bonusCheck');
-        
         let payload = {
             email: currentEmail,
             projectId: currentActiveProjectId,
@@ -228,33 +305,19 @@
             bonusIngenuity: checkboxes[3].checked ? "YES" : "NO",
             bonusPresentation: checkboxes[4].checked ? "YES" : "NO"
         };
-
         try {
-            let res = await fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
+            let res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
             let json = await res.json();
             if(json.status === "success") {
                 alert("Evaluation sync successful!");
-                
-                // Update interface counter tab with the new runtime count returned by the API
-                if(json.updatedCount !== undefined) {
-                    document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
-                }
-                
+                if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
                 fetchNextVideo();
-            } else {
-                alert(json.message);
-            }
-        } catch(e) {
-            alert("Submission error communicating payload with web endpoints.");
-        }
+            } else { alert(json.message); }
+        } catch(e) { alert("Submission error communicating payload."); }
     }
 
     async function skipVideo() {
         if(!confirm("Are you sure you want to skip this video? It will not be shown to you again.")) return;
-
         let payload = {
             email: currentEmail,
             projectId: currentActiveProjectId,
@@ -266,28 +329,15 @@
             bonusIngenuity: "NO",
             bonusPresentation: "NO"
         };
-
         try {
-            let res = await fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
+            let res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
             let json = await res.json();
             if(json.status === "success") {
                 alert("Video skipped successfully.");
-                
-                // Update interface counter tab with the new runtime count returned by the API
-                if(json.updatedCount !== undefined) {
-                    document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
-                }
-                
+                if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
                 fetchNextVideo();
-            } else {
-                alert(json.message);
-            }
-        } catch(e) {
-            alert("Error trying to process video skip action.");
-        }
+            } else { alert(json.message); }
+        } catch(e) { alert("Error trying to process video skip action."); }
     }
 </script>
 </body>
