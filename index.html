@@ -20,7 +20,7 @@
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         .rubric-section { background: #ffffff; padding: 18px; border: 1px solid #e5e5e5; border-left: 4px solid #ba0c2f; margin-bottom: 15px; border-radius: 4px; }
         .bonus-section { background: #ffffff; padding: 18px; border: 1px solid #e5e5e5; border-left: 4px solid #ba0c2f; margin-bottom: 15px; border-radius: 4px; }
-        .score-display { font-size: 1.25rem; font-weight: 600; margin-top: 15px; color: #ffffff; background: #000000; padding: 12px 20px; border-radius: 4px; float: right; border: 1px solid #d0daf0; border-radius: 24px;}
+        .score-display { font-size: 1.25rem; font-weight: 600; margin-top: 15px; color: #ffffff; background: #000000; padding: 12px 20px; border-radius: 24px; float: right; border: 1px solid #d0daf0; }
         .clear { clear: both; }
         .checkbox-container { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
         .checkbox-container label { display: flex; align-items: center; gap: 8px; font-weight: 500; color: #555; cursor: pointer; font-size: 0.9rem; }
@@ -53,7 +53,6 @@
     <div id="loginScreen">
         <h2>IEEE SSCS Evaluation Portal Login</h2>
         
-        <!-- Step 1 input wrapper -->
         <div id="emailStep">
             <div class="form-group">
                 <label for="evaluatorEmail">Registered Email Address:</label>
@@ -62,7 +61,6 @@
             <button onclick="handleVerifyEmail()">Continue</button>
         </div>
 
-        <!-- Step 2 hidden input wrapper -->
         <div id="passwordStep" class="hidden">
             <div class="form-group">
                 <label id="passwordLabel" for="evaluatorPassword">Password:</label>
@@ -172,6 +170,17 @@
 
     document.addEventListener("DOMContentLoaded", loadLeaderboard);
 
+    // Global helper helper to notify judges of a network block/timeout
+    function handleNetworkError(contextText) {
+        alert("⚠️ Network Connectivity Error:\n\n" + 
+              "Unable to communicate securely with Google Script deployment servers while trying to " + contextText + ".\n\n" +
+              "If you are using restricted Wi-Fi, your ISP or local network firewall may be dropping the connection. " +
+              "Please try:\n" +
+              "• Switching temporarily to mobile data / personal hotspot.\n" +
+              "• Changing your Wi-Fi DNS settings to Google DNS (8.8.8.8).\n" +
+              "• Disabling aggressive ad-blockers or privacy shields.");
+    }
+
     async function loadLeaderboard() {
         const tbody = document.getElementById('leaderboardBody');
         try {
@@ -190,11 +199,10 @@
                 tbody.innerHTML = `<tr><td colspan="4" class="text-center">No evaluations have been submitted yet.</td></tr>`;
             }
         } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color: #ba0c2f;">Failed to sync current leaderboard metrics.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color: #ba0c2f;">Failed to sync current leaderboard metrics due to network routing limitations.</td></tr>`;
         }
     }
 
-    // Step 1: Check if email exists and if they are a first time or returning user
     async function handleVerifyEmail() {
         currentEmail = document.getElementById('evaluatorEmail').value.trim();
         if(!currentEmail) return alert("Please type your email address.");
@@ -218,14 +226,13 @@
                     btn.innerText = "Sign In";
                 }
             } else {
-                alert(json.message); // Invalid user warning
+                alert(json.message);
             }
         } catch(e) {
-            alert("Error checking account registration status.");
+            handleNetworkError("verify account email status");
         }
     }
 
-    // Step 2: Finalize login by checking or saving the password match
     async function handleLogin() {
         const password = document.getElementById('evaluatorPassword').value.trim();
         if(!password) return alert("Please specify a password.");
@@ -243,7 +250,7 @@
                 alert(json.message);
             }
         } catch(e) {
-            alert("Network connection error verifying identity details.");
+            handleNetworkError("verify security account credentials");
         }
     }
 
@@ -279,7 +286,9 @@
                 document.getElementById('evaluationScreen').classList.add('hidden');
                 document.getElementById('emptyScreen').classList.remove('hidden');
             }
-        } catch(e) { alert("Error retrieving database video payload records."); }
+        } catch(e) { 
+            handleNetworkError("retrieve target video records from database"); 
+        }
     }
 
     function calculateTotalScore() {
@@ -306,14 +315,20 @@
             bonusPresentation: checkboxes[4].checked ? "YES" : "NO"
         };
         try {
-            let res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            let res = await fetch(API_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload) 
+            });
             let json = await res.json();
             if(json.status === "success") {
                 alert("Evaluation sync successful!");
                 if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
                 fetchNextVideo();
             } else { alert(json.message); }
-        } catch(e) { alert("Submission error communicating payload."); }
+        } catch(e) { 
+            handleNetworkError("submit structural rating metric payload updates"); 
+        }
     }
 
     async function skipVideo() {
@@ -330,14 +345,20 @@
             bonusPresentation: "NO"
         };
         try {
-            let res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            let res = await fetch(API_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload) 
+            });
             let json = await res.json();
             if(json.status === "success") {
                 alert("Video skipped successfully.");
                 if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
                 fetchNextVideo();
             } else { alert(json.message); }
-        } catch(e) { alert("Error trying to process video skip action."); }
+        } catch(e) { 
+            handleNetworkError("process baseline video skip request"); 
+        }
     }
 </script>
 </body>
