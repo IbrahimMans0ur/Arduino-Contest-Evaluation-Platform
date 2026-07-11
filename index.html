@@ -53,7 +53,7 @@
     <div id="loginScreen">
         <h2>IEEE SSCS Evaluation Portal Login</h2>
         
-        <!-- Step 1 input wrapper -->
+        <!-- Step 1: Input Email -->
         <div id="emailStep">
             <div class="form-group">
                 <label for="evaluatorEmail">Registered Email Address:</label>
@@ -62,13 +62,26 @@
             <button onclick="handleVerifyEmail()">Continue</button>
         </div>
 
-        <!-- Step 2 hidden input wrapper -->
+        <!-- Step 2: Password Challenge (Can change prompt text contextually) -->
         <div id="passwordStep" class="hidden">
             <div class="form-group">
-                <label id="passwordLabel" for="evaluatorPassword">Password:</label>
+                <label id="passwordLabel" for="evaluatorPassword">Enter Your Password:</label>
                 <input type="password" id="evaluatorPassword" placeholder="••••••••">
             </div>
             <button id="loginBtn" onclick="handleLogin()">Sign In</button>
+        </div>
+
+        <!-- Step 3: Explicit New Password Definition For Initial Customization -->
+        <div id="updatePasswordStep" class="hidden">
+            <div class="form-group">
+                <label for="newPassword">Create Your New Permanent Password:</label>
+                <input type="password" id="newPassword" placeholder="Minimum 6 characters">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm New Permanent Password:</label>
+                <input type="password" id="confirmPassword" placeholder="••••••••">
+            </div>
+            <button onclick="handlePasswordUpdate()">Save Password & Sign In</button>
         </div>
 
         <div class="leaderboard-wrapper">
@@ -165,10 +178,11 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyURcy3eAgjLun73xwZcLaFJ_jNpWxUtfCmkepjDpr4fAYe2OA3wvkwdry6eJokRfkl/exec";
+    const API_URL = "YOUR_SPREADSHEET_EXEC_URL_HERE"; // Ensure your compiled deployment URL goes here
     
     let currentEmail = "";
     let currentActiveProjectId = "";
+    let validatedTempPasswordToken = ""; // Store checked plain text token temporary verification
 
     document.addEventListener("DOMContentLoaded", loadLeaderboard);
 
@@ -194,7 +208,6 @@
         }
     }
 
-    // Step 1: Check if email exists and if they are a first time or returning user
     async function handleVerifyEmail() {
         currentEmail = document.getElementById('evaluatorEmail').value.trim();
         if(!currentEmail) return alert("Please type your email address.");
@@ -208,24 +221,19 @@
                 document.getElementById('passwordStep').classList.remove('hidden');
                 
                 const label = document.getElementById('passwordLabel');
-                const btn = document.getElementById('loginBtn');
-                
-                if (!json.hasPassword) {
-                    label.innerText = "Create a New Password for Future Logins:";
-                    btn.innerText = "Register Password & Sign In";
+                if (json.isTemporary) {
+                    label.innerText = "Enter Temporary Password Provided to You:";
                 } else {
                     label.innerText = "Enter Your Password:";
-                    btn.innerText = "Sign In";
                 }
             } else {
-                alert(json.message); // Invalid user warning
+                alert(json.message);
             }
         } catch(e) {
             alert("Error checking account registration status.");
         }
     }
 
-    // Step 2: Finalize login by checking or saving the password match
     async function handleLogin() {
         const password = document.getElementById('evaluatorPassword').value.trim();
         if(!password) return alert("Please specify a password.");
@@ -235,16 +243,51 @@
             let json = await res.json();
             
             if (json.status === "success") {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('welcomeUser').innerText = `${json.name} (${json.country})`;
-                document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.ratedCount || 0}`;
-                fetchNextVideo();
+                if (json.mustUpdatePassword) {
+                    // Transition to step 3 layout wrapper to intercept workflow
+                    validatedTempPasswordToken = password; 
+                    document.getElementById('passwordStep').classList.add('hidden');
+                    document.getElementById('updatePasswordStep').classList.remove('hidden');
+                } else {
+                    // Standard returning flow bypass verification directly
+                    initializeEvaluationDashboard(json);
+                }
             } else {
                 alert(json.message);
             }
         } catch(e) {
             alert("Network connection error verifying identity details.");
         }
+    }
+
+    async function handlePasswordUpdate() {
+        const newPass = document.getElementById('newPassword').value.trim();
+        const confirmPass = document.getElementById('confirmPassword').value.trim();
+
+        if (newPass.length < 6) return alert("Your new permanent password must be at least 6 characters long.");
+        if (newPass !== confirmPass) return alert("Passwords do not match. Please verify your entries.");
+
+        try {
+            let res = await fetch(`${API_URL}?action=updateInitialPassword&email=${encodeURIComponent(currentEmail)}&tempPassword=${encodeURIComponent(validatedTempPasswordToken)}&newPassword=${encodeURIComponent(newPass)}`);
+            let json = await res.json();
+            
+            if (json.status === "success") {
+                alert("Your new secure profile password has been successfully established!");
+                document.getElementById('updatePasswordStep').classList.add('hidden');
+                initializeEvaluationDashboard(json);
+            } else {
+                alert(json.message);
+            }
+        } catch(e) {
+            alert("Network error trying to commit customized password record.");
+        }
+    }
+
+    function initializeEvaluationDashboard(userData) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('welcomeUser').innerText = `${userData.name} (${userData.country})`;
+        document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${userData.ratedCount || 0}`;
+        fetchNextVideo();
     }
 
     function processEmbedLink(url) {
