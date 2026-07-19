@@ -1,3 +1,4 @@
+<!-- Remember to replace the API_URL configuration value inside the script block below -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,6 +19,12 @@
         .hidden { display: none; }
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 25px 0; border-radius: 4px; background: #000; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+        
+        /* Transcript UI Element Styling rules */
+        .btn-transcript { background: #242424; color: #fff; border: 1px solid #444; padding: 10px 18px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.15s ease; width: auto; text-transform: none; letter-spacing: normal; margin-bottom: 15px; }
+        .btn-transcript:hover { background: #444444; }
+        .transcript-box { background: #f1f3f5; border: 1px solid #e5e5e5; border-radius: 4px; padding: 15px; margin-bottom: 25px; max-height: 250px; overflow-y: auto; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; color: #444; }
+        
         .rubric-section { background: #ffffff; padding: 18px; border: 1px solid #e5e5e5; border-left: 4px solid #ba0c2f; margin-bottom: 15px; border-radius: 4px; }
         .bonus-section { background: #ffffff; padding: 18px; border: 1px solid #e5e5e5; border-left: 4px solid #ba0c2f; margin-bottom: 15px; border-radius: 4px; }
         .score-display { font-size: 1.25rem; font-weight: 600; margin-top: 15px; color: #ffffff; background: #000000; padding: 12px 20px; border-radius: 4px; float: right; border: 1px solid #d0daf0; border-radius: 24px;}
@@ -62,7 +69,7 @@
             <button onclick="handleVerifyEmail()">Continue</button>
         </div>
 
-        <!-- Step 2: Password Challenge (Can change prompt text contextually) -->
+        <!-- Step 2: Password Challenge -->
         <div id="passwordStep" class="hidden">
             <div class="form-group">
                 <label id="passwordLabel" for="evaluatorPassword">Enter Your Password:</label>
@@ -71,7 +78,7 @@
             <button id="loginBtn" onclick="handleLogin()">Sign In</button>
         </div>
 
-        <!-- Step 3: Explicit New Password Definition For Initial Customization -->
+        <!-- Step 3: Explicit New Password Definition -->
         <div id="updatePasswordStep" class="hidden">
             <div class="form-group">
                 <label for="newPassword">Create Your New Permanent Password:</label>
@@ -115,6 +122,12 @@
 
         <div class="video-container">
             <iframe id="videoPlayer" src="" allowfullscreen></iframe>
+        </div>
+
+        <!-- Dynamic Transcript Interface Injection Element -->
+        <div id="transcriptWrapper" class="hidden">
+            <button id="toggleTranscriptBtn" class="btn-transcript" onclick="toggleTranscriptView()">Show Video Transcript</button>
+            <div id="transcriptContentBox" class="transcript-box hidden"></div>
         </div>
 
         <h3>Marking Rubric Scoring</h3>
@@ -183,6 +196,7 @@
     let currentEmail = "";
     let currentActiveProjectId = "";
     let validatedTempPasswordToken = ""; // Store checked plain text token temporary verification
+    let currentTranscript = ""; // Memory allocation space for loaded transcript string references
 
     document.addEventListener("DOMContentLoaded", loadLeaderboard);
 
@@ -244,12 +258,10 @@
             
             if (json.status === "success") {
                 if (json.mustUpdatePassword) {
-                    // Transition to step 3 layout wrapper to intercept workflow
                     validatedTempPasswordToken = password; 
                     document.getElementById('passwordStep').classList.add('hidden');
                     document.getElementById('updatePasswordStep').classList.remove('hidden');
                 } else {
-                    // Standard returning flow bypass verification directly
                     initializeEvaluationDashboard(json);
                 }
             } else {
@@ -316,6 +328,24 @@
                 document.getElementById('critRules').value = "1";
                 document.querySelectorAll('.bonusCheck').forEach(cb => cb.checked = false);
                 calculateTotalScore();
+                
+                // Content evaluation for visual components and text metrics logic
+                currentTranscript = json.data.transcript ? json.data.transcript.trim() : "";
+                const wrapper = document.getElementById('transcriptWrapper');
+                const box = document.getElementById('transcriptContentBox');
+                const btn = document.getElementById('toggleTranscriptBtn');
+                
+                box.classList.add('hidden');
+                btn.innerText = "Show Video Transcript";
+                
+                if (currentTranscript) {
+                    wrapper.classList.remove('hidden');
+                    box.innerText = currentTranscript;
+                } else {
+                    wrapper.classList.add('hidden');
+                    box.innerText = "";
+                }
+
                 document.getElementById('emptyScreen').classList.add('hidden');
                 document.getElementById('evaluationScreen').classList.remove('hidden');
             } else {
@@ -323,6 +353,18 @@
                 document.getElementById('emptyScreen').classList.remove('hidden');
             }
         } catch(e) { alert("Error retrieving database video payload records."); }
+    }
+
+    function toggleTranscriptView() {
+        const box = document.getElementById('transcriptContentBox');
+        const btn = document.getElementById('toggleTranscriptBtn');
+        if (box.classList.contains('hidden')) {
+            box.classList.remove('hidden');
+            btn.innerText = "Hide Video Transcript";
+        } else {
+            box.classList.add('hidden');
+            btn.innerText = "Show Video Transcript";
+        }
     }
 
     function calculateTotalScore() {
