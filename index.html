@@ -25,7 +25,7 @@
         
         .rubric-section { background: #ffffff; padding: 18px; border: 1px solid #e5e5e5; border-left: 4px solid #ba0c2f; margin-bottom: 15px; border-radius: 4px; }
         .bonus-section { background: #ffffff; padding: 18px; border: 1px solid #e5e5e5; border-left: 4px solid #ba0c2f; margin-bottom: 15px; border-radius: 4px; }
-        .score-display { font-size: 1.25rem; font-weight: 600; margin-top: 15px; color: #ffffff; background: #000000; padding: 12px 20px; border-radius: 4px; float: right; border: 1px solid #d0daf0; border-radius: 24px;}
+        .score-display { font-size: 1.25rem; font-weight: 600; margin-top: 15px; color: #ffffff; background: #000000; padding: 12px 20px; float: right; border: 1px solid #d0daf0; border-radius: 24px;}
         .clear { clear: both; }
         .checkbox-container { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
         .checkbox-container label { display: flex; align-items: center; gap: 8px; font-weight: 500; color: #555; cursor: pointer; font-size: 0.9rem; }
@@ -52,9 +52,74 @@
         .rank-index { width: 45px; font-weight: 600; text-align: center; color: #777; }
         .count-column { text-align: right; padding-right: 15px !important; font-weight: 600; }
         .text-center { text-align: center; color: #888; padding: 20px !important; }
+
+        /* --- Notification Box Styles --- */
+        #notificationBox {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .toast {
+            background: #ffffff;
+            color: #242424;
+            padding: 14px 18px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left: 5px solid #242424;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            white-space: pre-line;
+        }
+
+        .toast.success { border-left-color: #28a745; }
+        .toast.error { border-left-color: #ba0c2f; }
+        .toast.warning { border-left-color: #ffc107; }
+        .toast.info { border-left-color: #17a2b8; }
+
+        .toast .toast-close {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0;
+            width: auto;
+            text-transform: none;
+            line-height: 1;
+        }
+
+        .toast .toast-close:hover {
+            color: #000;
+            background: transparent;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100%); }
+        }
     </style>
 </head>
 <body>
+
+<!-- Notification Box Container -->
+<div id="notificationBox"></div>
 
 <div class="container">
     <div id="loginScreen">
@@ -200,6 +265,36 @@
 
     document.addEventListener("DOMContentLoaded", loadLeaderboard);
 
+    // Notification System Utility Function
+    function showNotification(message, type = "info", duration = 4000) {
+        const container = document.getElementById('notificationBox');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        toast.innerHTML = `
+            <span>${message}</span>
+            <button class="toast-close" onclick="closeNotification(this.parentElement)">&times;</button>
+        `;
+        
+        container.appendChild(toast);
+
+        if (duration > 0) {
+            setTimeout(() => {
+                closeNotification(toast);
+            }, duration);
+        }
+    }
+
+    function closeNotification(toastElement) {
+        if (!toastElement) return;
+        toastElement.style.animation = "fadeOut 0.3s forwards";
+        setTimeout(() => {
+            if (toastElement.parentNode) {
+                toastElement.parentNode.removeChild(toastElement);
+            }
+        }, 300);
+    }
+
     async function loadLeaderboard() {
         const tbody = document.getElementById('leaderboardBody');
         try {
@@ -224,7 +319,7 @@
 
     async function handleVerifyEmail() {
         currentEmail = document.getElementById('evaluatorEmail').value.trim();
-        if(!currentEmail) return alert("Please type your email address.");
+        if(!currentEmail) return showNotification("Please type your email address.", "warning");
 
         try {
             let res = await fetch(`${API_URL}?action=checkEmailStatus&email=${encodeURIComponent(currentEmail)}`);
@@ -241,16 +336,16 @@
                     label.innerText = "Enter Your Password:";
                 }
             } else {
-                alert(json.message);
+                showNotification(json.message, "error");
             }
         } catch(e) {
-            alert("Error checking account registration status.");
+            showNotification("Error checking account registration status.", "error");
         }
     }
 
     async function handleLogin() {
         const password = document.getElementById('evaluatorPassword').value.trim();
-        if(!password) return alert("Please specify a password.");
+        if(!password) return showNotification("Please specify a password.", "warning");
 
         try {
             let res = await fetch(`${API_URL}?action=login&email=${encodeURIComponent(currentEmail)}&password=${encodeURIComponent(password)}`);
@@ -265,10 +360,10 @@
                     initializeEvaluationDashboard(json);
                 }
             } else {
-                alert(json.message);
+                showNotification(json.message, "error");
             }
         } catch(e) {
-            alert("Network connection error verifying identity details.");
+            showNotification("Network connection error verifying identity details.", "error");
         }
     }
 
@@ -276,22 +371,22 @@
         const newPass = document.getElementById('newPassword').value.trim();
         const confirmPass = document.getElementById('confirmPassword').value.trim();
 
-        if (newPass.length < 6) return alert("Your new permanent password must be at least 6 characters long.");
-        if (newPass !== confirmPass) return alert("Passwords do not match. Please verify your entries.");
+        if (newPass.length < 6) return showNotification("Your new permanent password must be at least 6 characters long.", "warning");
+        if (newPass !== confirmPass) return showNotification("Passwords do not match. Please verify your entries.", "warning");
 
         try {
             let res = await fetch(`${API_URL}?action=updateInitialPassword&email=${encodeURIComponent(currentEmail)}&tempPassword=${encodeURIComponent(validatedTempPasswordToken)}&newPassword=${encodeURIComponent(newPass)}`);
             let json = await res.json();
             
             if (json.status === "success") {
-                alert("Your new secure profile password has been successfully established!");
+                showNotification("Your new secure profile password has been successfully established!", "success");
                 document.getElementById('updatePasswordStep').classList.add('hidden');
                 initializeEvaluationDashboard(json);
             } else {
-                alert(json.message);
+                showNotification(json.message, "error");
             }
         } catch(e) {
-            alert("Network error trying to commit customized password record.");
+            showNotification("Network error trying to commit customized password record.", "error");
         }
     }
 
@@ -351,7 +446,7 @@
                 document.getElementById('evaluationScreen').classList.add('hidden');
                 document.getElementById('emptyScreen').classList.remove('hidden');
             }
-        } catch(e) { alert("Error retrieving database video payload records."); }
+        } catch(e) { showNotification("Error retrieving database video payload records.", "error"); }
     }
 
     function toggleTranscriptView() {
@@ -409,7 +504,7 @@
             if (isPresInvalid) {
                 errorMsg += "• Uncheck 'Impactful Presentation' (requires 4pt Presentation Quality).\n";
             }
-            alert(errorMsg);
+            showNotification(errorMsg, "warning", 6000);
             return;
         }
 
@@ -433,11 +528,11 @@
             });
             let json = await res.json();
             if(json.status === "success") {
-                alert("Evaluation sync successful!");
+                showNotification("Evaluation sync successful!", "success");
                 if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
                 fetchNextVideo();
-            } else { alert(json.message); }
-        } catch(e) { alert("Submission error communicating payload."); }
+            } else { showNotification(json.message, "error"); }
+        } catch(e) { showNotification("Submission error communicating payload.", "error"); }
     }
 
     async function skipVideo() {
@@ -461,11 +556,11 @@
             });
             let json = await res.json();
             if(json.status === "success") {
-                alert("Video skipped successfully.");
+                showNotification("Video skipped successfully.", "info");
                 if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
                 fetchNextVideo();
-            } else { alert(json.message); }
-        } catch(e) { alert("Error trying to process video skip action."); }
+            } else { showNotification(json.message, "error"); }
+        } catch(e) { showNotification("Error trying to process video skip action.", "error"); }
     }
 </script>
 </body>
