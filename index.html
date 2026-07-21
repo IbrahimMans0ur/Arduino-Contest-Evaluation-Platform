@@ -19,7 +19,6 @@
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 25px 0; border-radius: 4px; background: #000; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         
-        /* Transcript UI Element Styling rules */
         .btn-transcript { background: #242424; color: #fff; border: 1px solid #444; padding: 10px 18px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.15s ease; width: auto; text-transform: none; letter-spacing: normal; margin-bottom: 15px; }
         .btn-transcript:hover { background: #444444; }
         .transcript-box { background: #f1f3f5; border: 1px solid #e5e5e5; border-radius: 4px; padding: 15px; margin-bottom: 25px; max-height: 250px; overflow-y: auto; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; color: #444; }
@@ -194,8 +193,8 @@
     
     let currentEmail = "";
     let currentActiveProjectId = "";
-    let validatedTempPasswordToken = ""; // Store checked plain text token temporary verification
-    let currentTranscript = ""; // Memory allocation space for loaded transcript string references
+    let validatedTempPasswordToken = "";
+    let currentTranscript = "";
 
     document.addEventListener("DOMContentLoaded", loadLeaderboard);
 
@@ -328,7 +327,6 @@
                 document.querySelectorAll('.bonusCheck').forEach(cb => cb.checked = false);
                 calculateTotalScore();
                 
-                // Content evaluation for visual components and text metrics logic
                 currentTranscript = json.data.transcript ? json.data.transcript.trim() : "";
                 const wrapper = document.getElementById('transcriptWrapper');
                 const box = document.getElementById('transcriptContentBox');
@@ -390,7 +388,11 @@
             bonusPresentation: checkboxes[4].checked ? "YES" : "NO"
         };
         try {
-            let res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            let res = await fetch(API_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload) 
+            });
             let json = await res.json();
             if(json.status === "success") {
                 alert("Evaluation sync successful!");
@@ -414,7 +416,11 @@
             bonusPresentation: "NO"
         };
         try {
-            let res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            let res = await fetch(API_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload) 
+            });
             let json = await res.json();
             if(json.status === "success") {
                 alert("Video skipped successfully.");
