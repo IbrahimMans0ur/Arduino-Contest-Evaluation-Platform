@@ -53,7 +53,6 @@
         .count-column { text-align: right; padding-right: 15px !important; font-weight: 600; }
         .text-center { text-align: center; color: #888; padding: 20px !important; }
 
-        /* --- Notification Box Styles --- */
         #notificationBox {
             position: fixed;
             top: 20px;
@@ -118,14 +117,12 @@
 </head>
 <body>
 
-<!-- Notification Box Container -->
 <div id="notificationBox"></div>
 
 <div class="container">
     <div id="loginScreen">
         <h2>IEEE SSCS Evaluation Portal Login</h2>
         
-        <!-- Step 1: Input Email -->
         <div id="emailStep">
             <div class="form-group">
                 <label for="evaluatorEmail">Registered Email Address:</label>
@@ -134,7 +131,6 @@
             <button onclick="handleVerifyEmail()">Continue</button>
         </div>
 
-        <!-- Step 2: Password Challenge -->
         <div id="passwordStep" class="hidden">
             <div class="form-group">
                 <label id="passwordLabel" for="evaluatorPassword">Enter Your Password:</label>
@@ -143,7 +139,6 @@
             <button id="loginBtn" onclick="handleLogin()">Sign In</button>
         </div>
 
-        <!-- Step 3: Explicit New Password Definition -->
         <div id="updatePasswordStep" class="hidden">
             <div class="form-group">
                 <label for="newPassword">Create Your New Permanent Password:</label>
@@ -189,7 +184,6 @@
             <iframe id="videoPlayer" src="" allowfullscreen></iframe>
         </div>
 
-        <!-- Dynamic Transcript Interface Injection Element -->
         <div id="transcriptWrapper" class="hidden">
             <button id="toggleTranscriptBtn" class="btn-transcript" onclick="toggleTranscriptView()">Show Video Transcript</button>
             <div id="transcriptContentBox" class="transcript-box hidden"></div>
@@ -232,7 +226,6 @@
                 <label><input type="checkbox" class="bonusCheck" id="bonusCommunity"> Community Impact</label>
                 <label id="lblTechExcel"><input type="checkbox" class="bonusCheck" id="bonusTechExcel"> Technical Excellence</label>
                 <label><input type="checkbox" class="bonusCheck" id="bonusSocial"> Social Impact</label>
-                <label><input type="checkbox" class="bonusCheck" id="bonusIngenuity"> Pure Ingenuity</label>
                 <label id="lblPresentation"><input type="checkbox" class="bonusCheck" id="bonusPresentation"> Impactful Presentation</label>
             </div>
         </div>
@@ -265,7 +258,6 @@
 
     document.addEventListener("DOMContentLoaded", loadLeaderboard);
 
-    // Notification System Utility Function
     function showNotification(message, type = "info", duration = 4000) {
         const container = document.getElementById('notificationBox');
         const toast = document.createElement('div');
@@ -495,7 +487,6 @@
         const isTechInvalid = (techScore < 4 && document.getElementById('bonusTechExcel').checked);
         const isPresInvalid = (presScore < 4 && document.getElementById('bonusPresentation').checked);
 
-        // Block submission if disqualified sub-prizes remain checked
         if (isTechInvalid || isPresInvalid) {
             let errorMsg = "Submission blocked:\n";
             if (isTechInvalid) {
@@ -516,7 +507,6 @@
             bonusCommunity: document.getElementById('bonusCommunity').checked ? "YES" : "NO",
             bonusTechExcel: document.getElementById('bonusTechExcel').checked ? "YES" : "NO",
             bonusSocial: document.getElementById('bonusSocial').checked ? "YES" : "NO",
-            bonusIngenuity: document.getElementById('bonusIngenuity').checked ? "YES" : "NO",
             bonusPresentation: document.getElementById('bonusPresentation').checked ? "YES" : "NO"
         };
 
@@ -545,7 +535,6 @@
             bonusCommunity: "NO",
             bonusTechExcel: "NO",
             bonusSocial: "NO",
-            bonusIngenuity: "NO",
             bonusPresentation: "NO"
         };
         try {
