@@ -460,17 +460,28 @@
 
         const lblTechExcel = document.getElementById('lblTechExcel');
         const lblPresentation = document.getElementById('lblPresentation');
+        
+        const cbTechExcel = document.getElementById('bonusTechExcel');
+        const cbPresentation = document.getElementById('bonusPresentation');
 
+        // Handle Technical Excellence prerequisite
         if (tech < 4) {
             lblTechExcel.classList.add('disabled-label');
+            cbTechExcel.checked = false;
+            cbTechExcel.disabled = true;
         } else {
             lblTechExcel.classList.remove('disabled-label');
+            cbTechExcel.disabled = false;
         }
 
+        // Handle Impactful Presentation prerequisite
         if (pres < 4) {
             lblPresentation.classList.add('disabled-label');
+            cbPresentation.checked = false;
+            cbPresentation.disabled = true;
         } else {
             lblPresentation.classList.remove('disabled-label');
+            cbPresentation.disabled = false;
         }
 
         let grandTotal = tech + pres + rule;
