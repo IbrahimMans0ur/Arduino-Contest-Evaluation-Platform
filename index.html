@@ -223,7 +223,7 @@
         <div class="bonus-section">
             <label style="color: #242424;">4. Recommended Sub-Prize Nominations</label>
             <div class="checkbox-container">
-                <label><input type="checkbox" class="bonusCheck" id="bonusCommunity"> Community Impact</label>
+                <label><input type="checkbox" class="bonusCheck" id="bonusIngenuity"> Ingenuity</label>
                 <label id="lblTechExcel"><input type="checkbox" class="bonusCheck" id="bonusTechExcel"> Technical Excellence</label>
                 <label><input type="checkbox" class="bonusCheck" id="bonusSocial"> Social Impact</label>
                 <label id="lblPresentation"><input type="checkbox" class="bonusCheck" id="bonusPresentation"> Impactful Presentation</label>
@@ -515,7 +515,7 @@
             projectId: currentActiveProjectId,
             totalScore: scoreValue,
             isSkip: false,
-            bonusCommunity: document.getElementById('bonusCommunity').checked ? "YES" : "NO",
+            bonusIngenuity: document.getElementById('bonusIngenuity').checked ? "YES" : "NO",
             bonusTechExcel: document.getElementById('bonusTechExcel').checked ? "YES" : "NO",
             bonusSocial: document.getElementById('bonusSocial').checked ? "YES" : "NO",
             bonusPresentation: document.getElementById('bonusPresentation').checked ? "YES" : "NO"
@@ -543,7 +543,7 @@
             projectId: currentActiveProjectId,
             totalScore: "SKIPPED",
             isSkip: true,
-            bonusCommunity: "NO",
+            bonusIngenuity: "NO",
             bonusTechExcel: "NO",
             bonusSocial: "NO",
             bonusPresentation: "NO"
