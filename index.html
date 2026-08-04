@@ -5,30 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IEEE SSCS Evaluation Portal</title>
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 850px; margin: 30px auto; background: #ffffff; padding: 35px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid #ba0c2f; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; color: #333; transition: padding-left 0.3s ease; }
+        body.sidebar-active { padding-left: 280px; }
+        .container { max-width: 850px; margin: 30px auto; background: #ffffff; padding: 35px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid #ba0c2f; position: relative; }
         h2 { border-bottom: 1px solid #e5e5e5; padding-bottom: 12px; color: #242424; margin-top: 0; font-weight: 600; font-size: 1.6rem; letter-spacing: -0.3px; }
         h3 { color: #242424; margin-top: 30px; font-size: 1.2rem; font-weight: 600; }
         .form-group { margin-bottom: 25px; }
         label { display: block; font-weight: 600; margin-bottom: 8px; color: #444; font-size: 0.95rem; }
         input[type="email"], input[type="password"], select { width: 100%; padding: 12px; border: 1px solid #cccccc; border-radius: 4px; box-sizing: border-box; font-size: 15px; background-color: #ffffff; color: #333; transition: border-color 0.15s ease; }
         input[type="email"]:focus, input[type="password"]:focus, select:focus { border-color: #ba0c2f; outline: none; }
-        
+
         button { background: #ba0c2f; color: #ffffff; border: none; padding: 14px 24px; font-size: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; transition: background 0.15s ease; }
         button:hover:not(:disabled) { background: #930a25; }
         button:disabled { background: #888; cursor: not-allowed; }
-        
+
         .btn-outline { background: transparent; color: #ba0c2f; border: 1px solid #ba0c2f; margin-top: 15px; transition: all 0.15s ease; }
         .btn-outline:hover:not(:disabled) { background: #ba0c2f; color: #ffffff; }
+
+        /* Sidebar Styles */
+        #sidebarToggle { position: fixed; top: 15px; left: 15px; z-index: 1001; background: #242424; color: #fff; border: none; padding: 10px 14px; font-size: 1.4rem; border-radius: 4px; cursor: pointer; transition: background 0.15s ease; width: auto; line-height: 1; }
+        #sidebarToggle:hover { background: #444; }
+
+        #sidebarMenu { display: flex; flex-direction: column; position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: #ffffff; border-right: 1px solid #e5e5e5; box-shadow: 2px 0 8px rgba(0,0,0,0.05); padding: 70px 20px 25px 20px; box-sizing: border-box; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; }
+        #sidebarMenu.active { transform: translateX(0); }
+        .sidebar-header { color: #242424; font-weight: 600; margin-top: 0; margin-bottom: 15px; padding-bottom: 12px; font-size: 1.15rem; border-bottom: 2px solid #ba0c2f; }
+
+        #historyList { flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
+        .history-item { background: #f8f9fa; border: 1px solid #e5e5e5; border-radius: 4px; padding: 12px; margin-bottom: 12px; cursor: pointer; transition: all 0.15s ease; }
+        .history-item:hover { border-color: #ba0c2f; background: #fff5f5; }
+        .history-item.active-item { border-left: 4px solid #ba0c2f; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .history-item.skipped-item { border-left: 4px solid #6c757d; opacity: 0.85; }
+        .history-title { font-weight: 600; font-size: 0.9rem; color: #242424; margin-bottom: 5px; line-height: 1.3; }
+        .history-score { font-size: 0.85rem; color: #777; font-weight: 500; }
+
+        .return-btn { background: #555555; font-size: 0.85rem; padding: 12px; margin-top: auto; }
+        .return-btn:hover { background: #333333; }
 
         .hidden { display: none !important; }
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 25px 0; border-radius: 4px; background: #000; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-        
+
         .btn-transcript { background: #242424; color: #fff; border: 1px solid #444; padding: 10px 18px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.15s ease; width: auto; text-transform: none; letter-spacing: normal; margin-bottom: 15px; }
         .btn-transcript:hover { background: #444444; }
         .transcript-box { background: #f1f3f5; border: 1px solid #e5e5e5; border-radius: 4px; padding: 15px; margin-bottom: 25px; max-height: 250px; overflow-y: auto; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; color: #444; }
-        
+
         .rubric-section, .bonus-section { background: #ffffff; padding: 18px; border: 1px solid #e5e5e5; border-left: 4px solid #ba0c2f; margin-bottom: 15px; border-radius: 4px; }
         .score-display { font-size: 1.25rem; font-weight: 600; margin-top: 15px; color: #ffffff; background: #000000; padding: 12px 20px; float: right; border: 1px solid #d0daf0; border-radius: 24px;}
         .clear { clear: both; }
@@ -37,7 +57,7 @@
         .checkbox-container input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
         .checkbox-container label.disabled-label { opacity: 0.5; cursor: not-allowed; }
         .checkbox-container input[type="checkbox"]:disabled { cursor: not-allowed; }
-        
+
         .action-button-group { display: flex; gap: 15px; margin-top: 25px; }
         .btn-submit { background: #ba0c2f; flex: 2; }
         .btn-skip { background: #6c757d; flex: 1; }
@@ -74,6 +94,11 @@
 
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
+
+        @media (max-width: 1100px) {
+            body.sidebar-active { padding-left: 20px; }
+            #sidebarMenu { box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+        }
     </style>
 </head>
 <body>
@@ -91,10 +116,20 @@
     </div>
 </div>
 
+<button id="sidebarToggle" class="hidden" onclick="toggleSidebar()">☰</button>
+
+<div id="sidebarMenu">
+    <h3 class="sidebar-header">Previous Evaluations</h3>
+    <div id="historyList">
+        <p style="font-size: 0.9rem; color: #777;">Loading history...</p>
+    </div>
+    <button class="return-btn" onclick="restorePendingVideo()">Return to Current Video</button>
+</div>
+
 <div class="container">
     <div id="loginScreen">
         <h2>IEEE SSCS Evaluation Portal Login</h2>
-        
+
         <div id="emailStep">
             <div class="form-group">
                 <label for="evaluatorEmail">Registered Email Address:</label>
@@ -164,7 +199,7 @@
         </div>
 
         <h3>Marking Rubric Scoring</h3>
-        
+
         <div class="rubric-section">
             <label>1. Adherence to Rules (Requirements Compliance)</label>
             <select id="critRules" onchange="calculateTotalScore()">
@@ -206,11 +241,6 @@
 
         <div><div class="score-display">Calculated Base Score: <span id="aggregateScore">3</span> Points</div></div>
         <div class="clear"></div>
-        
-        <div class="action-button-group" id="navButtonGroup" style="margin-top: 20px; display: flex; gap: 15px;">
-            <button id="btnPrev" onclick="showPreviousVideo()" style="background: #343a40; flex: 1; display: none;">Edit Previous</button>
-            <button id="btnNext" onclick="showNextVideo()" style="background: #343a40; flex: 1; display: none;">Next</button>
-        </div>
 
         <div class="action-button-group" style="margin-top: 15px;">
             <button class="btn-skip" id="btnSkip" onclick="promptSkipVideo()">Skip Video</button>
@@ -220,22 +250,23 @@
 
     <div id="emptyScreen" class="hidden">
         <h2>Evaluation Queue Completed</h2>
-        <p>You have successfully evaluated all accessible project submissions currently matching your profile metrics.</p>
-        <button onclick="showPreviousVideo()" id="btnEmptyPrev" style="background: #343a40; margin-top: 15px; display: none;">Edit Previous Evaluation</button>
+        <p>You have successfully evaluated all accessible project submissions currently matching your profile metrics. Use the sidebar on the left to revisit or edit anything you already scored.</p>
         <button onclick="fetchNextVideo()" style="background: #555555; margin-top: 15px;">Check For New Projects</button>
     </div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwP-FSq7gp86BUQc6m0F7-QLnWjPtJRDKDFFKNlploNb_EVLpin45SDbYhb3EZTkK_j/exec";
-    
+
     let currentEmail = "";
     let currentActiveProjectId = "";
     let validatedTempPasswordToken = "";
     let currentTranscript = "";
 
-    let evaluatedHistory = [];
-    let viewingHistoryIndex = -1;
+    // History / sidebar state
+    let globalHistory = [];
+    let isReevaluating = false;
+    let pendingNewVideo = null;
 
     document.addEventListener("DOMContentLoaded", loadLeaderboard);
 
@@ -243,7 +274,7 @@
         const container = document.getElementById('notificationBox');
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        
+
         toast.innerHTML = `<span>${message}</span><button class="toast-close" onclick="closeNotification(this.parentElement)">&times;</button>`;
         container.appendChild(toast);
         if (duration > 0) setTimeout(() => closeNotification(toast), duration);
@@ -253,6 +284,11 @@
         if (!toastElement) return;
         toastElement.style.animation = "fadeOut 0.3s forwards";
         setTimeout(() => { if (toastElement.parentNode) toastElement.parentNode.removeChild(toastElement); }, 300);
+    }
+
+    function toggleSidebar() {
+        document.getElementById('sidebarMenu').classList.toggle('active');
+        document.body.classList.toggle('sidebar-active');
     }
 
     async function loadLeaderboard() {
@@ -281,11 +317,11 @@
         try {
             let res = await fetch(`${API_URL}?action=checkEmailStatus&email=${encodeURIComponent(currentEmail)}&_ts=${Date.now()}`);
             let json = await res.json();
-            
+
             if (json.status === "success") {
                 document.getElementById('emailStep').classList.add('hidden');
                 document.getElementById('passwordStep').classList.remove('hidden');
-                
+
                 const label = document.getElementById('passwordLabel');
                 if (json.isTemporary) label.innerText = "Enter Temporary Password Provided to You:";
                 else label.innerText = "Enter Your Password:";
@@ -307,7 +343,7 @@
         try {
             let res = await fetch(`${API_URL}?action=forgotPassword&email=${encodeURIComponent(currentEmail)}&_ts=${Date.now()}`);
             let json = await res.json();
-            
+
             if (json.status === "success") {
                 showNotification(json.message, "success", 7000);
                 document.getElementById('passwordLabel').innerText = "Enter Temporary Password Provided to You (Check Email):";
@@ -332,10 +368,10 @@
         try {
             let res = await fetch(`${API_URL}?action=login&email=${encodeURIComponent(currentEmail)}&password=${encodeURIComponent(password)}&_ts=${Date.now()}`);
             let json = await res.json();
-            
+
             if (json.status === "success") {
                 if (json.mustUpdatePassword) {
-                    validatedTempPasswordToken = password; 
+                    validatedTempPasswordToken = password;
                     document.getElementById('passwordStep').classList.add('hidden');
                     document.getElementById('updatePasswordStep').classList.remove('hidden');
                 } else { await initializeEvaluationDashboard(json); }
@@ -357,7 +393,7 @@
         try {
             let res = await fetch(`${API_URL}?action=updateInitialPassword&email=${encodeURIComponent(currentEmail)}&tempPassword=${encodeURIComponent(validatedTempPasswordToken)}&newPassword=${encodeURIComponent(newPass)}`);
             let json = await res.json();
-            
+
             if (json.status === "success") {
                 showNotification("Your new secure profile password has been successfully established!", "success");
                 document.getElementById('updatePasswordStep').classList.add('hidden');
@@ -366,21 +402,69 @@
         } catch(e) { showNotification("Network error trying to commit customized password record.", "error"); }
     }
 
-    async function fetchUserHistory() {
-        try {
-            let res = await fetch(`${API_URL}?action=getUserHistory&email=${encodeURIComponent(currentEmail)}`);
-            let json = await res.json();
-            if (json.status === "success") evaluatedHistory = json.data;
-        } catch (e) { console.error("Failed to load user history", e); }
-    }
-
     async function initializeEvaluationDashboard(userData) {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('welcomeUser').innerText = `${userData.name} (${userData.country})`;
         document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${userData.ratedCount || 0}`;
-        
+
+        document.getElementById('sidebarToggle').classList.remove('hidden');
+        document.body.classList.add('sidebar-active');
+        document.getElementById('sidebarMenu').classList.add('active');
+
         await fetchUserHistory();
         fetchNextVideo();
+    }
+
+    async function fetchUserHistory() {
+        if (!currentEmail) return;
+
+        const cacheKey = `history_${currentEmail}`;
+        const cachedData = localStorage.getItem(cacheKey);
+
+        // Load immediately from local cache if it exists
+        if (cachedData) {
+            try {
+                globalHistory = JSON.parse(cachedData);
+                renderSidebar();
+            } catch(e) {
+                console.warn("Error parsing local cache, refetching from server...");
+            }
+        }
+
+        // Fetch in the background to ensure consistency on page reloads/logins
+        try {
+            let res = await fetch(`${API_URL}?action=getUserHistory&email=${encodeURIComponent(currentEmail)}`);
+            let json = await res.json();
+            if(json.status === "success") {
+                globalHistory = json.data;
+                localStorage.setItem(cacheKey, JSON.stringify(globalHistory));
+                renderSidebar();
+            }
+        } catch(e) {
+            console.error("Failed to fetch history:", e);
+        }
+    }
+
+    function renderSidebar() {
+        const list = document.getElementById('historyList');
+        if(globalHistory.length === 0) {
+            list.innerHTML = "<p style='font-size: 0.9rem; color: #777;'>No previous evaluations yet.</p>";
+            return;
+        }
+
+        list.innerHTML = globalHistory.map(item => {
+            const isActive = item.projectId == currentActiveProjectId ? 'active-item' : '';
+            const isSkipped = item.totalScore === "SKIPPED";
+            const skippedClass = isSkipped ? 'skipped-item' : '';
+            const displayScore = isSkipped ? 'Skipped' : `Total Score: ${item.totalScore}`;
+
+            return `
+                <div class="history-item ${isActive} ${skippedClass}" onclick="loadHistoryVideo('${item.projectId}')">
+                    <div class="history-title">${item.projectName}</div>
+                    <div class="history-score">${displayScore}</div>
+                </div>
+            `;
+        }).join('');
     }
 
     function processEmbedLink(url) {
@@ -405,60 +489,14 @@
         return "Category: " + catString;
     }
 
-    function updateNavButtons() {
-        const btnPrev = document.getElementById('btnPrev');
-        const btnNext = document.getElementById('btnNext');
-        const btnEmptyPrev = document.getElementById('btnEmptyPrev');
-
-        if (evaluatedHistory.length === 0) {
-            btnPrev.style.display = 'none';
-            btnNext.style.display = 'none';
-            btnEmptyPrev.style.display = 'none';
-            return;
-        }
-
-        btnEmptyPrev.style.display = 'inline-block';
-
-        if (viewingHistoryIndex === -1) {
-            btnPrev.style.display = 'block';
-            btnPrev.innerText = "Edit Previous";
-            btnNext.style.display = 'none';
-        } else {
-            btnPrev.style.display = (viewingHistoryIndex > 0) ? 'block' : 'none';
-            btnPrev.innerText = "Previous";
-            btnNext.style.display = 'block';
-            btnNext.innerText = (viewingHistoryIndex === evaluatedHistory.length - 1) ? "New Projects" : "Next";
-        }
-    }
-
-    function loadHistoryProject(index) {
-        viewingHistoryIndex = index;
-        const project = evaluatedHistory[index];
-
-        currentActiveProjectId = project.projectId;
-        document.getElementById('projectTitle').innerText = project.projectName + " (Editing)";
-        document.getElementById('projectCategory').innerText = formatCategoryDisplay(project.category);
-        document.getElementById('videoPlayer').src = processEmbedLink(project.videoUrl);
-
-        document.getElementById('critRules').value = project.critRules;
-        document.getElementById('critTechnical').value = project.critTech;
-        document.getElementById('critPresentation').value = project.critPres;
-
-        document.getElementById('bonusIngenuity').checked = (project.bIngenuity === "YES");
-        document.getElementById('bonusTechExcel').checked = (project.bTechExcel === "YES");
-        document.getElementById('bonusSocial').checked = (project.bSocial === "YES");
-        document.getElementById('bonusPresentation').checked = (project.bPresentation === "YES");
-
-        calculateTotalScore();
-
-        currentTranscript = project.transcript ? project.transcript.trim() : "";
+    function fillTranscriptBox() {
         const wrapper = document.getElementById('transcriptWrapper');
         const box = document.getElementById('transcriptContentBox');
         const btn = document.getElementById('toggleTranscriptBtn');
-        
+
         box.classList.add('hidden');
         btn.innerText = "Show Video Transcript";
-        
+
         if (currentTranscript) {
             wrapper.classList.remove('hidden');
             box.innerText = currentTranscript;
@@ -466,71 +504,97 @@
             wrapper.classList.add('hidden');
             box.innerText = "";
         }
+    }
+
+    function loadHistoryVideo(projectId) {
+        const historyItem = globalHistory.find(h => h.projectId == projectId);
+        if(!historyItem) return;
+
+        isReevaluating = true;
+        currentActiveProjectId = historyItem.projectId;
+
+        const isSkipped = historyItem.totalScore === "SKIPPED";
+
+        document.getElementById('projectTitle').innerText = historyItem.projectName + (isSkipped ? " (Recovered)" : " (Re-evaluation)");
+        document.getElementById('projectCategory').innerText = formatCategoryDisplay(historyItem.category);
+        document.getElementById('videoPlayer').src = processEmbedLink(historyItem.videoUrl);
+
+        document.getElementById('critRules').value = (isSkipped || !historyItem.critRules) ? "1" : historyItem.critRules;
+        document.getElementById('critTechnical').value = (isSkipped || !historyItem.critTech) ? "1" : historyItem.critTech;
+        document.getElementById('critPresentation').value = (isSkipped || !historyItem.critPres) ? "1" : historyItem.critPres;
+
+        document.getElementById('bonusIngenuity').checked = (historyItem.bIngenuity === "YES" && !isSkipped);
+        document.getElementById('bonusTechExcel').checked = (historyItem.bTechExcel === "YES" && !isSkipped);
+        document.getElementById('bonusSocial').checked = (historyItem.bSocial === "YES" && !isSkipped);
+        document.getElementById('bonusPresentation').checked = (historyItem.bPresentation === "YES" && !isSkipped);
+
+        calculateTotalScore();
+
+        currentTranscript = historyItem.transcript ? historyItem.transcript.trim() : "";
+        fillTranscriptBox();
 
         document.getElementById('btnSubmit').innerText = "Update Evaluation";
         document.getElementById('btnSkip').style.display = 'none';
         document.getElementById('emptyScreen').classList.add('hidden');
         document.getElementById('evaluationScreen').classList.remove('hidden');
 
-        updateNavButtons();
-    }
-
-    function showPreviousVideo() {
-        if (viewingHistoryIndex === -1) loadHistoryProject(evaluatedHistory.length - 1);
-        else if (viewingHistoryIndex > 0) loadHistoryProject(viewingHistoryIndex - 1);
-        showNotification("Successfully navigated to previous evaluation.", "info");
-    }
-
-    function showNextVideo() {
-        if (viewingHistoryIndex < evaluatedHistory.length - 1) {
-            loadHistoryProject(viewingHistoryIndex + 1);
-            showNotification("Successfully navigated to next evaluation.", "info");
-        } else { fetchNextVideo(); }
+        renderSidebar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function fetchNextVideo() {
-        viewingHistoryIndex = -1;
-        
         try {
             let res = await fetch(`${API_URL}?action=getNextVideo&email=${encodeURIComponent(currentEmail)}`);
             let json = await res.json();
             if (json.status === "success" && json.videoFound) {
-                currentActiveProjectId = json.data.projectId.toString().trim();
-                document.getElementById('projectTitle').innerText = json.data.projectName;
-                document.getElementById('projectCategory').innerText = formatCategoryDisplay(json.data.category);
-                document.getElementById('videoPlayer').src = processEmbedLink(json.data.videoUrl);
-                document.getElementById('critTechnical').value = "1";
-                document.getElementById('critPresentation').value = "1";
-                document.getElementById('critRules').value = "1";
-                document.querySelectorAll('.bonusCheck').forEach(cb => cb.checked = false);
-                calculateTotalScore();
-                
-                currentTranscript = json.data.transcript ? json.data.transcript.trim() : "";
-                const wrapper = document.getElementById('transcriptWrapper');
-                const box = document.getElementById('transcriptContentBox');
-                const btn = document.getElementById('toggleTranscriptBtn');
-                
-                box.classList.add('hidden');
-                btn.innerText = "Show Video Transcript";
-                
-                if (currentTranscript) {
-                    wrapper.classList.remove('hidden');
-                    box.innerText = currentTranscript;
-                } else {
-                    wrapper.classList.add('hidden');
-                    box.innerText = "";
-                }
-
-                document.getElementById('btnSubmit').innerText = "Submit Evaluation";
-                document.getElementById('btnSkip').style.display = 'block';
-                document.getElementById('emptyScreen').classList.add('hidden');
-                document.getElementById('evaluationScreen').classList.remove('hidden');
+                pendingNewVideo = json.data;
+                loadPendingVideoToUI();
             } else {
+                pendingNewVideo = null;
                 document.getElementById('evaluationScreen').classList.add('hidden');
                 document.getElementById('emptyScreen').classList.remove('hidden');
             }
-            updateNavButtons();
         } catch(e) { showNotification("Error retrieving database video payload records.", "error"); }
+    }
+
+    function loadPendingVideoToUI() {
+        if (!pendingNewVideo) {
+            fetchNextVideo();
+            return;
+        }
+
+        isReevaluating = false;
+        currentActiveProjectId = pendingNewVideo.projectId.toString().trim();
+        document.getElementById('projectTitle').innerText = pendingNewVideo.projectName;
+        document.getElementById('projectCategory').innerText = formatCategoryDisplay(pendingNewVideo.category);
+        document.getElementById('videoPlayer').src = processEmbedLink(pendingNewVideo.videoUrl);
+        document.getElementById('critTechnical').value = "1";
+        document.getElementById('critPresentation').value = "1";
+        document.getElementById('critRules').value = "1";
+        document.querySelectorAll('.bonusCheck').forEach(cb => cb.checked = false);
+        calculateTotalScore();
+
+        currentTranscript = pendingNewVideo.transcript ? pendingNewVideo.transcript.trim() : "";
+        fillTranscriptBox();
+
+        document.getElementById('btnSubmit').innerText = "Submit Evaluation";
+        document.getElementById('btnSkip').style.display = 'block';
+        document.getElementById('emptyScreen').classList.add('hidden');
+        document.getElementById('evaluationScreen').classList.remove('hidden');
+        renderSidebar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function restorePendingVideo() {
+        if (pendingNewVideo && pendingNewVideo.projectId != currentActiveProjectId) {
+            loadPendingVideoToUI();
+        } else if (!pendingNewVideo) {
+            fetchNextVideo();
+        }
+
+        if(window.innerWidth <= 1100) {
+            toggleSidebar();
+        }
     }
 
     function toggleTranscriptView() {
@@ -595,13 +659,12 @@
             return;
         }
 
-        const isReeval = (viewingHistoryIndex !== -1);
         let payload = {
             email: currentEmail,
             projectId: currentActiveProjectId,
             totalScore: scoreValue,
             isSkip: false,
-            isReevaluation: isReeval,
+            isReevaluation: isReevaluating,
             bonusIngenuity: document.getElementById('bonusIngenuity').checked ? "YES" : "NO",
             bonusTechExcel: document.getElementById('bonusTechExcel').checked ? "YES" : "NO",
             bonusSocial: document.getElementById('bonusSocial').checked ? "YES" : "NO",
@@ -612,29 +675,59 @@
         };
 
         const btnSubmit = document.getElementById('btnSubmit');
-        btnSubmit.innerText = isReeval ? "Updating..." : "Submitting...";
+        btnSubmit.innerText = isReevaluating ? "Updating..." : "Submitting...";
         btnSubmit.disabled = true;
 
         try {
-            let res = await fetch(API_URL, { 
-                method: "POST", 
+            let res = await fetch(API_URL, {
+                method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify(payload) 
+                body: JSON.stringify(payload)
             });
             let json = await res.json();
-            
+
             if(json.status === "success") {
-                showNotification(isReeval ? "Evaluation successfully updated!" : "Evaluation sync successful!", "success");
+                showNotification(isReevaluating ? "Evaluation successfully updated!" : "Evaluation sync successful!", "success");
                 if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
-                
-                await fetchUserHistory(); 
-                if (viewingHistoryIndex === -1) fetchNextVideo();
-                else showNextVideo(); 
+
+                // Update local history cache without an extra GET request
+                let newHistoryItem = {
+                    projectId: currentActiveProjectId,
+                    totalScore: scoreValue,
+                    critRules: payload.critRules,
+                    critTech: payload.critTech,
+                    critPres: payload.critPres,
+                    bIngenuity: payload.bonusIngenuity,
+                    bTechExcel: payload.bonusTechExcel,
+                    bSocial: payload.bonusSocial,
+                    bPresentation: payload.bonusPresentation
+                };
+
+                if (isReevaluating) {
+                    let existing = globalHistory.find(h => h.projectId == currentActiveProjectId);
+                    if (existing) Object.assign(existing, newHistoryItem);
+                } else if (pendingNewVideo) {
+                    newHistoryItem.projectName = pendingNewVideo.projectName;
+                    newHistoryItem.videoUrl = pendingNewVideo.videoUrl;
+                    newHistoryItem.category = pendingNewVideo.category;
+                    newHistoryItem.transcript = pendingNewVideo.transcript;
+                    globalHistory.unshift(newHistoryItem);
+                }
+
+                localStorage.setItem(`history_${currentEmail}`, JSON.stringify(globalHistory));
+                renderSidebar();
+
+                if (isReevaluating) {
+                    restorePendingVideo();
+                } else {
+                    pendingNewVideo = null;
+                    fetchNextVideo();
+                }
             } else { showNotification(json.message, "error"); }
-        } catch(e) { 
-            showNotification("Submission error communicating payload.", "error"); 
+        } catch(e) {
+            showNotification("Submission error communicating payload.", "error");
         } finally {
-            btnSubmit.innerText = isReeval ? "Update Evaluation" : "Submit Evaluation";
+            btnSubmit.innerText = isReevaluating ? "Update Evaluation" : "Submit Evaluation";
             btnSubmit.disabled = false;
         }
     }
@@ -655,14 +748,31 @@
         try {
             let res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
             let json = await res.json();
-            
+
             if(json.status === "success") {
                 showNotification("Video skipped successfully.", "info");
                 if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
-                if (viewingHistoryIndex === -1) fetchNextVideo();
-                else showNextVideo();
+
+                let newHistoryItem = {
+                    projectId: currentActiveProjectId,
+                    totalScore: "SKIPPED",
+                    critRules: 1, critTech: 1, critPres: 1,
+                    bIngenuity: "NO", bTechExcel: "NO", bSocial: "NO", bPresentation: "NO"
+                };
+                if (pendingNewVideo) {
+                    newHistoryItem.projectName = pendingNewVideo.projectName;
+                    newHistoryItem.videoUrl = pendingNewVideo.videoUrl;
+                    newHistoryItem.category = pendingNewVideo.category;
+                    newHistoryItem.transcript = pendingNewVideo.transcript;
+                    globalHistory.unshift(newHistoryItem);
+                }
+                localStorage.setItem(`history_${currentEmail}`, JSON.stringify(globalHistory));
+                renderSidebar();
+
+                pendingNewVideo = null;
+                fetchNextVideo();
             } else { showNotification(json.message, "error"); }
-        } catch(e) { showNotification("Error trying to process video skip action.", "error"); } 
+        } catch(e) { showNotification("Error trying to process video skip action.", "error"); }
         finally {
             btnConfirmSkip.innerText = "Yes, Skip";
             btnConfirmSkip.disabled = false;
