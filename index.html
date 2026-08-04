@@ -123,7 +123,7 @@
     <div id="historyList">
         <p style="font-size: 0.9rem; color: #777;">Loading history...</p>
     </div>
-    <button class="return-btn" onclick="restorePendingVideo()">Return to Current Video</button>
+    <button class="return-btn" id="btnReturnCurrent" onclick="restorePendingVideo()">Return to Current Video</button>
 </div>
 
 <div class="container">
@@ -585,11 +585,21 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function restorePendingVideo() {
-        if (pendingNewVideo && pendingNewVideo.projectId != currentActiveProjectId) {
-            loadPendingVideoToUI();
-        } else if (!pendingNewVideo) {
-            fetchNextVideo();
+    async function restorePendingVideo() {
+        const btn = document.getElementById('btnReturnCurrent');
+        const originalText = btn.innerText;
+        btn.innerText = "Returning to Current Video...";
+        btn.disabled = true;
+
+        try {
+            if (pendingNewVideo && pendingNewVideo.projectId != currentActiveProjectId) {
+                loadPendingVideoToUI();
+            } else if (!pendingNewVideo) {
+                await fetchNextVideo();
+            }
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
 
         if(window.innerWidth <= 1100) {
