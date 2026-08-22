@@ -35,6 +35,7 @@
         .history-item:hover { border-color: #ba0c2f; background: #fff5f5; }
         .history-item.active-item { border-left: 4px solid #ba0c2f; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .history-item.skipped-item { border-left: 4px solid #6c757d; opacity: 0.85; }
+        .history-item.reported-item { border-left: 4px solid #e07b00; opacity: 0.9; }
         .history-title { font-weight: 600; font-size: 0.9rem; color: #242424; margin-bottom: 5px; line-height: 1.3; }
         .history-score { font-size: 0.85rem; color: #777; font-weight: 500; }
 
@@ -68,6 +69,8 @@
         .btn-submit { background: #ba0c2f; flex: 2; }
         .btn-skip { background: #6c757d; flex: 1; }
         .btn-skip:hover:not(:disabled) { background: #5a6268; }
+        .btn-report { background: #e07b00; flex: 1; }
+        .btn-report:hover:not(:disabled) { background: #c46c00; }
 
         .badge-container { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; white-space: nowrap; }
         .meta-tag { font-weight: 600; color:#ffffff; background: #000000; padding: 6px 14px; border-radius: 4px; font-size: 0.85rem; border: 1px solid #d0daf0; }
@@ -97,6 +100,8 @@
         .modal-box { background: #ffffff; padding: 30px; border-radius: 4px; max-width: 450px; width: 90%; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border-top: 4px solid #ba0c2f; text-align: left; }
         .modal-box h3 { margin-top: 0; border-bottom: none; font-size: 1.4rem; color: #ba0c2f; }
         .modal-box p { color: #444; font-size: 1rem; line-height: 1.5; margin-bottom: 25px; }
+        .report-reason-btn { width: 100%; background: #242424; margin-bottom: 10px; }
+        .report-reason-btn:hover:not(:disabled) { background: #444444; }
 
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
@@ -119,6 +124,17 @@
             <button class="btn-skip" onclick="closeSkipModal()" style="flex: 1;">Cancel</button>
             <button class="btn-submit" id="btnConfirmSkip" onclick="executeSkip()" style="flex: 1;">Yes, Skip</button>
         </div>
+    </div>
+</div>
+
+<div id="reportModalOverlay" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h3>Report an Issue</h3>
+        <p>Select the issue that best describes this submission. This flags the video in the log for the leadership team to follow up on.</p>
+        <button class="report-reason-btn" onclick="executeReport('REMOVED')">Video Removed (link no longer works)</button>
+        <button class="report-reason-btn" onclick="executeReport('PRIVATE')">Video is Private (need access)</button>
+        <button class="report-reason-btn" onclick="executeReport('IRRELEVANT')">Irrelevant Video (not the contest project)</button>
+        <button class="btn-skip" style="margin-top: 5px;" onclick="closeReportModal()">Cancel</button>
     </div>
 </div>
 
@@ -254,6 +270,7 @@
 
         <div class="action-button-group" style="margin-top: 15px;">
             <button class="btn-skip" id="btnSkip" onclick="promptSkipVideo()">Skip Video</button>
+            <button class="btn-report" id="btnReport" onclick="promptReportVideo()">Report Issue</button>
             <button class="btn-submit" id="btnSubmit" onclick="submitEvaluation()">Submit Evaluation</button>
         </div>
     </div>
@@ -267,6 +284,16 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwP-FSq7gp86BUQc6m0F7-QLnWjPtJRDKDFFKNlploNb_EVLpin45SDbYhb3EZTkK_j/exec";
+
+    // Score cell values that mean "no numeric rating was given" rather than
+    // an actual score. Matches the REPORT_REASONS list on the backend.
+    const FLAG_VALUES = ["SKIPPED", "REMOVED", "PRIVATE", "IRRELEVANT"];
+    const REPORT_LABELS = {
+        SKIPPED: "Skipped",
+        REMOVED: "Reported: Removed",
+        PRIVATE: "Reported: Private",
+        IRRELEVANT: "Reported: Irrelevant"
+    };
 
     let currentEmail = "";
     let currentActiveProjectId = "";
@@ -466,11 +493,12 @@
         list.innerHTML = globalHistory.map(item => {
             const isActive = item.projectId == currentActiveProjectId ? 'active-item' : '';
             const isSkipped = item.totalScore === "SKIPPED";
-            const skippedClass = isSkipped ? 'skipped-item' : '';
-            const displayScore = isSkipped ? 'Skipped' : `Total Score: ${item.totalScore}`;
+            const isReported = REPORT_LABELS.hasOwnProperty(item.totalScore) && !isSkipped;
+            const flaggedClass = isSkipped ? 'skipped-item' : (isReported ? 'reported-item' : '');
+            const displayScore = REPORT_LABELS.hasOwnProperty(item.totalScore) ? REPORT_LABELS[item.totalScore] : `Total Score: ${item.totalScore}`;
 
             return `
-                <div class="history-item ${isActive} ${skippedClass}" onclick="loadHistoryVideo('${item.projectId}')">
+                <div class="history-item ${isActive} ${flaggedClass}" onclick="loadHistoryVideo('${item.projectId}')">
                     <div class="history-title">${item.projectName}</div>
                     <div class="history-score">${displayScore}</div>
                 </div>
@@ -554,21 +582,21 @@
         isReevaluating = true;
         currentActiveProjectId = historyItem.projectId;
 
-        const isSkipped = historyItem.totalScore === "SKIPPED";
+        const isFlagged = FLAG_VALUES.includes(historyItem.totalScore);
 
-        document.getElementById('projectTitle').innerText = historyItem.projectName + (isSkipped ? " (Recovered)" : " (Re-evaluation)");
+        document.getElementById('projectTitle').innerText = historyItem.projectName + (isFlagged ? " (Recovered)" : " (Re-evaluation)");
         document.getElementById('projectCategory').innerText = formatCategoryDisplay(historyItem.category);
         document.getElementById('videoPlayer').src = processEmbedLink(historyItem.videoUrl);
         updateVideoLinkButton(historyItem.videoUrl);
 
-        document.getElementById('critRules').value = (isSkipped || !historyItem.critRules) ? "1" : historyItem.critRules;
-        document.getElementById('critTechnical').value = (isSkipped || !historyItem.critTech) ? "1" : historyItem.critTech;
-        document.getElementById('critPresentation').value = (isSkipped || !historyItem.critPres) ? "1" : historyItem.critPres;
+        document.getElementById('critRules').value = (isFlagged || !historyItem.critRules) ? "1" : historyItem.critRules;
+        document.getElementById('critTechnical').value = (isFlagged || !historyItem.critTech) ? "1" : historyItem.critTech;
+        document.getElementById('critPresentation').value = (isFlagged || !historyItem.critPres) ? "1" : historyItem.critPres;
 
-        document.getElementById('bonusIngenuity').checked = (historyItem.bIngenuity === "YES" && !isSkipped);
-        document.getElementById('bonusTechExcel').checked = (historyItem.bTechExcel === "YES" && !isSkipped);
-        document.getElementById('bonusSocial').checked = (historyItem.bSocial === "YES" && !isSkipped);
-        document.getElementById('bonusPresentation').checked = (historyItem.bPresentation === "YES" && !isSkipped);
+        document.getElementById('bonusIngenuity').checked = (historyItem.bIngenuity === "YES" && !isFlagged);
+        document.getElementById('bonusTechExcel').checked = (historyItem.bTechExcel === "YES" && !isFlagged);
+        document.getElementById('bonusSocial').checked = (historyItem.bSocial === "YES" && !isFlagged);
+        document.getElementById('bonusPresentation').checked = (historyItem.bPresentation === "YES" && !isFlagged);
 
         calculateTotalScore();
 
@@ -577,6 +605,7 @@
 
         document.getElementById('btnSubmit').innerText = "Update Evaluation";
         document.getElementById('btnSkip').style.display = 'none';
+        document.getElementById('btnReport').style.display = 'none';
         document.getElementById('emptyScreen').classList.add('hidden');
         document.getElementById('evaluationScreen').classList.remove('hidden');
 
@@ -622,6 +651,7 @@
 
         document.getElementById('btnSubmit').innerText = "Submit Evaluation";
         document.getElementById('btnSkip').style.display = 'block';
+        document.getElementById('btnReport').style.display = 'block';
         document.getElementById('emptyScreen').classList.add('hidden');
         document.getElementById('evaluationScreen').classList.remove('hidden');
         renderSidebar();
@@ -832,6 +862,53 @@
             btnConfirmSkip.innerText = "Yes, Skip";
             btnConfirmSkip.disabled = false;
             closeSkipModal();
+        }
+    }
+
+    function promptReportVideo() { document.getElementById('reportModalOverlay').classList.remove('hidden'); }
+    function closeReportModal() { document.getElementById('reportModalOverlay').classList.add('hidden'); }
+
+    async function executeReport(reason) {
+        const modalButtons = document.querySelectorAll('#reportModalOverlay button');
+        modalButtons.forEach(b => b.disabled = true);
+
+        let payload = {
+            email: currentEmail, projectId: currentActiveProjectId, totalScore: reason,
+            isSkip: false, isReport: true, reportReason: reason, isReevaluation: false,
+            bonusIngenuity: "NO", bonusTechExcel: "NO",
+            bonusSocial: "NO", bonusPresentation: "NO", critRules: 1, critTech: 1, critPres: 1
+        };
+        try {
+            let res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+            let json = await res.json();
+
+            if(json.status === "success") {
+                showNotification(json.message, "info");
+                if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
+
+                let newHistoryItem = {
+                    projectId: currentActiveProjectId,
+                    totalScore: reason,
+                    critRules: 1, critTech: 1, critPres: 1,
+                    bIngenuity: "NO", bTechExcel: "NO", bSocial: "NO", bPresentation: "NO"
+                };
+                if (pendingNewVideo) {
+                    newHistoryItem.projectName = pendingNewVideo.projectName;
+                    newHistoryItem.videoUrl = pendingNewVideo.videoUrl;
+                    newHistoryItem.category = pendingNewVideo.category;
+                    newHistoryItem.transcript = pendingNewVideo.transcript;
+                    globalHistory.unshift(newHistoryItem);
+                }
+                localStorage.setItem(`history_${currentEmail}`, JSON.stringify(globalHistory));
+                renderSidebar();
+
+                pendingNewVideo = null;
+                fetchNextVideo();
+            } else { showNotification(json.message, "error"); }
+        } catch(e) { showNotification("Error trying to process video report action.", "error"); }
+        finally {
+            modalButtons.forEach(b => b.disabled = false);
+            closeReportModal();
         }
     }
 </script>
