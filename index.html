@@ -111,6 +111,984 @@
             body.sidebar-active { padding-left: 20px; }
             #sidebarMenu { box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
         }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            /* Layout & Spacing */
+            .container { margin: 15px; padding: 20px; border-top-width: 3px; }
+
+            /* Header Badges */
+            #evaluationScreen > div:first-child { flex-direction: column; align-items: flex-start; gap: 12px !important; }
+            .badge-container { flex-direction: row; flex-wrap: wrap; width: 100%; align-items: flex-start; }
+
+            /* Buttons & Links */
+            .action-button-group, .video-links-row { flex-direction: column; gap: 10px; }
+            .btn-submit, .btn-skip, .btn-report, .btn-video-link, .btn-transcript { 
+                width: 100%; 
+                flex: none; 
+                text-align: center; 
+                box-sizing: border-box; 
+            }
+
+            /* Rubric & Score */
+            .checkbox-container { grid-template-columns: 1fr; }
+            .score-display { float: none; display: block; text-align: center; margin-top: 20px; width: auto; }
+
+            /* Overflow Handling */
+            .leaderboard-wrapper { overflow-x: auto; }
+            .leaderboard-table { min-width: 500px; }
+            .modal-box { width: 95%; padding: 20px; }
+
+            /* Sidebar */
+            #sidebarMenu { width: 100%; max-width: 320px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="notificationBox"></div>
+
+<div id="skipModalOverlay" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h3>Confirm Skip Action</h3>
+        <p>Are you sure you want to skip this video?</p>
+        <div class="action-button-group" style="margin-top: 0;">
+            <button class="btn-skip" onclick="closeSkipModal()" style="flex: 1;">Cancel</button>
+            <button class="btn-submit" id="btnConfirmSkip" onclick="executeSkip()" style="flex: 1;">Yes, Skip</button>
+        </div>
+    </div>
+</div>
+
+<div id="reportModalOverlay" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h3>Report an Issue</h3>
+        <p>Select the issue that best describes this submission. This flags the video in the log for the leadership team to follow up on.</p>
+        <button class="report-reason-btn" onclick="executeReport('REMOVED')">Video Removed (link no longer works)</button>
+        <button class="report-reason-btn" onclick="executeReport('PRIVATE')">Video is Private (need access)</button>
+        <button class="report-reason-btn" onclick="executeReport('IRRELEVANT')">Irrelevant Video (not the contest project)</button>
+        <button class="btn-skip" style="margin-top: 5px;" onclick="closeReportModal()">Cancel</button>
+    </div>
+</div>
+
+<button id="sidebarToggle" class="hidden" onclick="toggleSidebar()">☰</button>
+
+<div id="sidebarMenu">
+    <h3 class="sidebar-header">Previous Evaluations</h3>
+    <div id="historyList">
+        <p style="font-size: 0.9rem; color: #777;">Loading history...</p>
+    </div>
+    <button class="return-btn" id="btnReturnCurrent" onclick="restorePendingVideo()">Return to Current Video</button>
+</div>
+
+<div class="container">
+    <div id="loginScreen">
+        <h2>IEEE SSCS Evaluation Portal Login</h2>
+
+        <div id="emailStep">
+            <div class="form-group">
+                <label for="evaluatorEmail">Registered Email Address:</label>
+                <input type="email" id="evaluatorEmail" placeholder="name@ieee.org">
+            </div>
+            <button id="continueBtn" onclick="handleVerifyEmail()">Continue</button>
+        </div>
+
+        <div id="passwordStep" class="hidden">
+            <div class="form-group">
+                <label id="passwordLabel" for="evaluatorPassword">Enter Your Password:</label>
+                <input type="password" id="evaluatorPassword" placeholder="••••••••">
+            </div>
+            <button id="loginBtn" onclick="handleLogin()">Sign In</button>
+            <button id="forgotPwdBtn" class="btn-outline" onclick="handleForgotPassword()">Forgot Password?</button>
+        </div>
+
+        <div id="updatePasswordStep" class="hidden">
+            <div class="form-group">
+                <label for="newPassword">Create Your New Permanent Password:</label>
+                <input type="password" id="newPassword" placeholder="Minimum 6 characters">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm New Permanent Password:</label>
+                <input type="password" id="confirmPassword" placeholder="••••••••">
+            </div>
+            <button onclick="handlePasswordUpdate()">Save Password & Sign In</button>
+        </div>
+
+        <div class="leaderboard-wrapper">
+            <h3>🏆 Evaluators Leaderboard</h3>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th class="rank-index">Rank</th>
+                        <th>Name</th>
+                        <th>Country</th>
+                        <th class="count-column">Videos Rated</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <tr><td colspan="4" class="text-center">Loading current volunteer standings...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="evaluationScreen" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 20px;">
+            <div style="display: flex; flex-direction: column;">
+                <h2 id="projectTitle" style="font-size: 1.45rem; line-height: 1.3; border: none; padding: 0; margin: 0;">Project Loading...</h2>
+                <div><span id="projectCategory" class="category-badge">Category: Loading...</span></div>
+            </div>
+            <div class="badge-container">
+                <span id="welcomeUser" class="meta-tag"></span>
+                <span id="userStatsCapsule" class="stats-badge">Videos Rated: 0</span>
+            </div>
+        </div>
+
+        <div class="video-container">
+            <iframe id="videoPlayer" src="" allowfullscreen></iframe>
+        </div>
+
+        <div class="video-links-row">
+            <a id="btnVideoLink" class="btn-video-link" href="#" target="_blank" rel="noopener" onclick="return handleVideoLinkClick()">Video Link</a>
+            <button id="toggleTranscriptBtn" class="btn-transcript hidden" onclick="toggleTranscriptView()">Show Video Transcript</button>
+        </div>
+
+        <div id="transcriptWrapper" class="hidden">
+            <div id="transcriptContentBox" class="transcript-box hidden"></div>
+        </div>
+
+        <h3>Marking Rubric Scoring</h3>
+
+        <div class="rubric-section">
+            <label>1. Adherence to Rules (Requirements Compliance)</label>
+            <select id="critRules" onchange="calculateTotalScore()">
+                <option value="1">1pt: Violated several contest rules (e.g., wrong components)</option>
+                <option value="2">2pt: Violated one rule (e.g., one extra component)</option>
+                <option value="3">3pt: Followed all contest rules fully (max score for this category)</option>
+            </select>
+        </div>
+
+        <div class="rubric-section">
+            <label>2. Technical Content (Electronics / Systems Integration)</label>
+            <select id="critTechnical" onchange="calculateTotalScore()">
+                <option value="1">1pt: Doesn't address the theme, no ingenuity, no notable technical achievement</option>
+                <option value="2">2pt: Somewhat addresses the theme, but lacks ingenuity and minimal technical achievement</option>
+                <option value="3">3pt: Addresses the theme, shows ingenuity and good technical achievement</option>
+                <option value="4">4pt: Clearly addresses the theme, outstanding ingenuity, remarkable technical achievement</option>
+            </select>
+        </div>
+
+        <div class="rubric-section">
+            <label>3. Presentation Quality (Clarity / Video Enjoyment)</label>
+            <select id="critPresentation" onchange="calculateTotalScore()">
+                <option value="1">1pt: Unclear, rushed, doesn't communicate the project's achievements</option>
+                <option value="2">2pt: Somewhat clear but struggles to effectively communicate achievements</option>
+                <option value="3">3pt: Clear and effectively communicates the project's achievements</option>
+                <option value="4">4pt: Outstanding job communicating achievements, very enjoyable to watch</option>
+            </select>
+        </div>
+
+        <div class="bonus-section">
+            <label style="color: #242424;">4. Recommended Sub-Prize Nominations</label>
+            <div class="checkbox-container">
+                <label><input type="checkbox" class="bonusCheck" id="bonusIngenuity"> Ingenuity</label>
+                <label id="lblTechExcel"><input type="checkbox" class="bonusCheck" id="bonusTechExcel"> Technical Excellence</label>
+                <label><input type="checkbox" class="bonusCheck" id="bonusSocial"> Social Impact</label>
+                <label id="lblPresentation"><input type="checkbox" class="bonusCheck" id="bonusPresentation"> Impactful Presentation</label>
+            </div>
+        </div>
+
+        <div><div class="score-display">Calculated Base Score: <span id="aggregateScore">3</span> Points</div></div>
+        <div class="clear"></div>
+
+        <div class="action-button-group" style="margin-top: 15px;">
+            <button class="btn-skip" id="btnSkip" onclick="promptSkipVideo()">Skip Video</button>
+            <button class="btn-report" id="btnReport" onclick="promptReportVideo()">Report Issue</button>
+            <button class="btn-submit" id="btnSubmit" onclick="submitEvaluation()">Submit Evaluation</button>
+        </div>
+    </div>
+
+    <div id="emptyScreen" class="hidden">
+        <h2>Evaluation Queue Completed</h2>
+        <p>You have successfully evaluated all accessible project submissions currently matching your profile metrics. Use the sidebar on the left to revisit or edit anything you already scored. See you in the next round.</p>
+        <button onclick="fetchNextVideo()" style="background: #555555; margin-top: 15px;">Check For New Projects</button>
+    </div>
+</div>
+
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwP-FSq7gp86BUQc6m0F7-QLnWjPtJRDKDFFKNlploNb_EVLpin45SDbYhb3EZTkK_j/exec";
+    const SUBMIT_COOLDOWN_SECONDS = 150;
+
+    // Score cell values that mean "no numeric rating was given" rather than
+    // an actual score. Matches the REPORT_REASONS list on the backend.
+    const FLAG_VALUES = ["SKIPPED", "REMOVED", "PRIVATE", "IRRELEVANT"];
+    const REPORT_LABELS = {
+        SKIPPED: "Skipped",
+        REMOVED: "Reported: Removed",
+        PRIVATE: "Reported: Private",
+        IRRELEVANT: "Reported: Irrelevant"
+    };
+
+    let currentEmail = "";
+    let currentActiveProjectId = "";
+    let currentVideoUrl = "";
+    let validatedTempPasswordToken = "";
+    let currentTranscript = "";
+
+    // History / sidebar state
+    let globalHistory = [];
+    let isReevaluating = false;
+    let pendingNewVideo = null;
+    let submitCooldownTimer = null;
+
+    document.addEventListener("DOMContentLoaded", loadLeaderboard);
+
+    function showNotification(message, type = "info", duration = 4000) {
+        const container = document.getElementById('notificationBox');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+
+        toast.innerHTML = `<span>${message}</span><button class="toast-close" onclick="closeNotification(this.parentElement)">&times;</button>`;
+        container.appendChild(toast);
+        if (duration > 0) setTimeout(() => closeNotification(toast), duration);
+    }
+
+    function closeNotification(toastElement) {
+        if (!toastElement) return;
+        toastElement.style.animation = "fadeOut 0.3s forwards";
+        setTimeout(() => { if (toastElement.parentNode) toastElement.parentNode.removeChild(toastElement); }, 300);
+    }
+
+    function toggleSidebar() {
+        document.getElementById('sidebarMenu').classList.toggle('active');
+        document.body.classList.toggle('sidebar-active');
+    }
+
+    async function loadLeaderboard() {
+        const tbody = document.getElementById('leaderboardBody');
+        try {
+            let res = await fetch(`${API_URL}?action=getLeaderboard`);
+            let json = await res.json();
+            if (json.status === "success" && json.data.length > 0) {
+                tbody.innerHTML = json.data.map((row, idx) => `<tr><td class="rank-index">${idx + 1}</td><td>${row.name}</td><td>${row.country || '—'}</td><td style="padding-left: 5%;">${row.count}</td></tr>`).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center">No evaluations have been submitted yet.</td></tr>`;
+            }
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color: #ba0c2f;">Failed to sync current leaderboard metrics.</td></tr>`;
+        }
+    }
+
+    async function handleVerifyEmail() {
+        currentEmail = document.getElementById('evaluatorEmail').value.trim();
+        if(!currentEmail) return showNotification("Please type your email address.", "warning");
+
+        const btn = document.getElementById('continueBtn');
+        btn.innerText = "Continuing...";
+        btn.disabled = true;
+
+        try {
+            let res = await fetch(`${API_URL}?action=checkEmailStatus&email=${encodeURIComponent(currentEmail)}&_ts=${Date.now()}`);
+            let json = await res.json();
+
+            if (json.status === "success") {
+                document.getElementById('emailStep').classList.add('hidden');
+                document.getElementById('passwordStep').classList.remove('hidden');
+
+                const label = document.getElementById('passwordLabel');
+                if (json.isTemporary) label.innerText = "Enter Temporary Password Provided to You:";
+                else label.innerText = "Enter Your Password:";
+            } else {
+                showNotification(json.message, "error");
+            }
+        } catch(e) { showNotification("Error checking account registration status.", "error"); }
+        finally {
+            btn.innerText = "Continue";
+            btn.disabled = false;
+        }
+    }
+
+    async function handleForgotPassword() {
+        const btn = document.getElementById('forgotPwdBtn');
+        btn.innerText = "Sending Email...";
+        btn.disabled = true;
+
+        try {
+            let res = await fetch(`${API_URL}?action=forgotPassword&email=${encodeURIComponent(currentEmail)}&_ts=${Date.now()}`);
+            let json = await res.json();
+
+            if (json.status === "success") {
+                showNotification(json.message, "success", 7000);
+                document.getElementById('passwordLabel').innerText = "Enter Temporary Password Provided to You (Check Email):";
+                document.getElementById('evaluatorPassword').value = "";
+            } else { showNotification(json.message, "error"); }
+        } catch(e) {
+            showNotification("Network error processing password reset.", "error");
+        } finally {
+            btn.innerText = "Forgot Password?";
+            btn.disabled = false;
+        }
+    }
+
+    async function handleLogin() {
+        const password = document.getElementById('evaluatorPassword').value.trim();
+        if(!password) return showNotification("Please specify a password.", "warning");
+
+        const btn = document.getElementById('loginBtn');
+        btn.innerText = "Signing In...";
+        btn.disabled = true;
+
+        try {
+            let res = await fetch(`${API_URL}?action=login&email=${encodeURIComponent(currentEmail)}&password=${encodeURIComponent(password)}&_ts=${Date.now()}`);
+            let json = await res.json();
+
+            if (json.status === "success") {
+                if (json.mustUpdatePassword) {
+                    validatedTempPasswordToken = password;
+                    document.getElementById('passwordStep').classList.add('hidden');
+                    document.getElementById('updatePasswordStep').classList.remove('hidden');
+                } else { await initializeEvaluationDashboard(json); }
+            } else { showNotification(json.message, "error"); }
+        } catch(e) { showNotification("Network connection error verifying identity details.", "error"); }
+        finally {
+            btn.innerText = "Sign In";
+            btn.disabled = false;
+        }
+    }
+
+    async function handlePasswordUpdate() {
+        const newPass = document.getElementById('newPassword').value.trim();
+        const confirmPass = document.getElementById('confirmPassword').value.trim();
+
+        if (newPass.length < 6) return showNotification("Your new permanent password must be at least 6 characters long.", "warning");
+        if (newPass !== confirmPass) return showNotification("Passwords do not match. Please verify your entries.", "warning");
+
+        try {
+            let res = await fetch(`${API_URL}?action=updateInitialPassword&email=${encodeURIComponent(currentEmail)}&tempPassword=${encodeURIComponent(validatedTempPasswordToken)}&newPassword=${encodeURIComponent(newPass)}`);
+            let json = await res.json();
+
+            if (json.status === "success") {
+                showNotification("Your new secure profile password has been successfully established!", "success");
+                document.getElementById('updatePasswordStep').classList.add('hidden');
+                await initializeEvaluationDashboard(json);
+            } else { showNotification(json.message, "error"); }
+        } catch(e) { showNotification("Network error trying to commit customized password record.", "error"); }
+    }
+
+    async function initializeEvaluationDashboard(userData) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('welcomeUser').innerText = `${userData.name} (${userData.country})`;
+        document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${userData.ratedCount || 0}`;
+
+        document.getElementById('sidebarToggle').classList.remove('hidden');
+        document.body.classList.add('sidebar-active');
+        document.getElementById('sidebarMenu').classList.add('active');
+
+        await fetchUserHistory();
+        fetchNextVideo();
+    }
+
+    async function fetchUserHistory() {
+        if (!currentEmail) return;
+
+        const cacheKey = `history_${currentEmail}`;
+        const cachedData = localStorage.getItem(cacheKey);
+
+        // Load immediately from local cache if it exists
+        if (cachedData) {
+            try {
+                globalHistory = JSON.parse(cachedData);
+                renderSidebar();
+            } catch(e) {
+                console.warn("Error parsing local cache, refetching from server...");
+            }
+        }
+
+        // Fetch in the background to ensure consistency on page reloads/logins
+        try {
+            let res = await fetch(`${API_URL}?action=getUserHistory&email=${encodeURIComponent(currentEmail)}`);
+            let json = await res.json();
+            if(json.status === "success") {
+                globalHistory = json.data;
+                localStorage.setItem(cacheKey, JSON.stringify(globalHistory));
+                renderSidebar();
+            }
+        } catch(e) {
+            console.error("Failed to fetch history:", e);
+        }
+    }
+
+    function renderSidebar() {
+        const list = document.getElementById('historyList');
+        if(globalHistory.length === 0) {
+            list.innerHTML = "<p style='font-size: 0.9rem; color: #777;'>No previous evaluations yet.</p>";
+            return;
+        }
+
+        list.innerHTML = globalHistory.map(item => {
+            const isActive = item.projectId == currentActiveProjectId ? 'active-item' : '';
+            const isSkipped = item.totalScore === "SKIPPED";
+            const isReported = REPORT_LABELS.hasOwnProperty(item.totalScore) && !isSkipped;
+            const flaggedClass = isSkipped ? 'skipped-item' : (isReported ? 'reported-item' : '');
+            const displayScore = REPORT_LABELS.hasOwnProperty(item.totalScore) ? REPORT_LABELS[item.totalScore] : `Total Score: ${item.totalScore}`;
+
+            return `
+                <div class="history-item ${isActive} ${flaggedClass}" onclick="loadHistoryVideo('${item.projectId}')">
+                    <div class="history-title">${item.projectName}</div>
+                    <div class="history-score">${displayScore}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Converts a YouTube watch/share/short link into an embeddable URL.
+    // Handles standard watch links, youtu.be short links, already-embedded
+    // links, and YouTube Shorts links (youtube.com/shorts/VIDEO_ID), which
+    // previously fell through untouched and caused the browser to try to
+    // load the non-embeddable watch page inside the iframe.
+    function processEmbedLink(url) {
+        if (!url) return "";
+        let videoId = "";
+        try {
+            url = url.trim();
+            if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1].split(/[?#]/)[0];
+            else if (url.includes("shorts/")) videoId = url.split("shorts/")[1].split(/[?#]/)[0];
+            else if (url.includes("v=")) videoId = url.split("v=")[1].split("&")[0];
+            else if (url.includes("embed/")) videoId = url.split("embed/")[1].split(/[?#]/)[0];
+            else return url;
+            return `https://www.youtube.com/embed/${videoId.replace(/[^a-zA-Z0-9_-]/g, '')}?rel=0`;
+        } catch (e) { return url; }
+    }
+
+    function formatCategoryDisplay(catString) {
+        if (!catString) return "Category: Unknown";
+        const cat = catString.toString().trim().toUpperCase();
+        if (cat === "H" || cat === "HIGHSCHOOL" || cat === "HIGH SCHOOL" || cat === "HIGH-SCHOOL") return "Category: Highschool";
+        if (cat === "P" || cat === "POST-SECONDARY" || cat === "POST SECONDARY" || cat === "POSTSECONDARY") return "Category: Post-Secondary";
+        if (!cat) return "Category: Unknown";
+        return "Category: " + catString;
+    }
+
+    function fillTranscriptBox() {
+        const wrapper = document.getElementById('transcriptWrapper');
+        const box = document.getElementById('transcriptContentBox');
+        const btn = document.getElementById('toggleTranscriptBtn');
+
+        box.classList.add('hidden');
+        btn.innerText = "Show Video Transcript";
+
+        if (currentTranscript) {
+            btn.classList.remove('hidden');
+            box.innerText = currentTranscript;
+        } else {
+            btn.classList.add('hidden');
+            wrapper.classList.add('hidden');
+            box.innerText = "";
+        }
+    }
+
+    // Keeps the "Video Link" button pointed at the raw video URL for
+    // whichever project is currently loaded, so judges can open it directly
+    // in a new tab if the embedded player fails or is blocked.
+    function updateVideoLinkButton(url) {
+        currentVideoUrl = url || "";
+        const btn = document.getElementById('btnVideoLink');
+        if (currentVideoUrl) {
+            btn.href = currentVideoUrl;
+            btn.classList.remove('hidden');
+        } else {
+            btn.href = "#";
+            btn.classList.add('hidden');
+        }
+    }
+
+    function handleVideoLinkClick() {
+        if (!currentVideoUrl) {
+            showNotification("No video link available for this project.", "warning");
+            return false;
+        }
+        return true; // let the anchor's normal target="_blank" navigation proceed
+    }
+
+    function loadHistoryVideo(projectId) {
+        const historyItem = globalHistory.find(h => h.projectId == projectId);
+        if(!historyItem) return;
+
+        isReevaluating = true;
+        currentActiveProjectId = historyItem.projectId;
+
+        const isFlagged = FLAG_VALUES.includes(historyItem.totalScore);
+
+        document.getElementById('projectTitle').innerText = historyItem.projectName + (isFlagged ? " (Recovered)" : " (Re-evaluation)");
+        document.getElementById('projectCategory').innerText = formatCategoryDisplay(historyItem.category);
+        document.getElementById('videoPlayer').src = processEmbedLink(historyItem.videoUrl);
+        updateVideoLinkButton(historyItem.videoUrl);
+
+        document.getElementById('critRules').value = (isFlagged || !historyItem.critRules) ? "1" : historyItem.critRules;
+        document.getElementById('critTechnical').value = (isFlagged || !historyItem.critTech) ? "1" : historyItem.critTech;
+        document.getElementById('critPresentation').value = (isFlagged || !historyItem.critPres) ? "1" : historyItem.critPres;
+
+        document.getElementById('bonusIngenuity').checked = (historyItem.bIngenuity === "YES" && !isFlagged);
+        document.getElementById('bonusTechExcel').checked = (historyItem.bTechExcel === "YES" && !isFlagged);
+        document.getElementById('bonusSocial').checked = (historyItem.bSocial === "YES" && !isFlagged);
+        document.getElementById('bonusPresentation').checked = (historyItem.bPresentation === "YES" && !isFlagged);
+
+        calculateTotalScore();
+
+        currentTranscript = historyItem.transcript ? historyItem.transcript.trim() : "";
+        fillTranscriptBox();
+
+        document.getElementById('btnSubmit').innerText = "Update Evaluation";
+        document.getElementById('btnSkip').style.display = 'none';
+        document.getElementById('btnReport').style.display = 'none';
+        document.getElementById('emptyScreen').classList.add('hidden');
+        document.getElementById('evaluationScreen').classList.remove('hidden');
+
+        renderSidebar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function fetchNextVideo() {
+        try {
+            let res = await fetch(`${API_URL}?action=getNextVideo&email=${encodeURIComponent(currentEmail)}`);
+            let json = await res.json();
+            if (json.status === "success" && json.videoFound) {
+                pendingNewVideo = json.data;
+                loadPendingVideoToUI();
+            } else {
+                pendingNewVideo = null;
+                document.getElementById('evaluationScreen').classList.add('hidden');
+                document.getElementById('emptyScreen').classList.remove('hidden');
+            }
+        } catch(e) { showNotification("Error retrieving database video payload records.", "error"); }
+    }
+
+    function loadPendingVideoToUI() {
+        if (!pendingNewVideo) {
+            fetchNextVideo();
+            return;
+        }
+
+        isReevaluating = false;
+        currentActiveProjectId = pendingNewVideo.projectId.toString().trim();
+        document.getElementById('projectTitle').innerText = pendingNewVideo.projectName;
+        document.getElementById('projectCategory').innerText = formatCategoryDisplay(pendingNewVideo.category);
+        document.getElementById('videoPlayer').src = processEmbedLink(pendingNewVideo.videoUrl);
+        updateVideoLinkButton(pendingNewVideo.videoUrl);
+        document.getElementById('critTechnical').value = "1";
+        document.getElementById('critPresentation').value = "1";
+        document.getElementById('critRules').value = "1";
+        document.querySelectorAll('.bonusCheck').forEach(cb => cb.checked = false);
+        calculateTotalScore();
+
+        currentTranscript = pendingNewVideo.transcript ? pendingNewVideo.transcript.trim() : "";
+        fillTranscriptBox();
+
+        document.getElementById('btnSubmit').innerText = "Submit Evaluation";
+        document.getElementById('btnSkip').style.display = 'block';
+        document.getElementById('btnReport').style.display = 'block';
+        document.getElementById('emptyScreen').classList.add('hidden');
+        document.getElementById('evaluationScreen').classList.remove('hidden');
+        startSubmitCooldown();
+        renderSidebar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function restorePendingVideo() {
+        const btn = document.getElementById('btnReturnCurrent');
+        const originalText = btn.innerText;
+        btn.innerText = "Returning to Current Video...";
+        btn.disabled = true;
+
+        try {
+            if (pendingNewVideo && pendingNewVideo.projectId != currentActiveProjectId) {
+                loadPendingVideoToUI();
+            } else if (!pendingNewVideo) {
+                await fetchNextVideo();
+            }
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+
+        if(window.innerWidth <= 1100) {
+            toggleSidebar();
+        }
+    }
+
+    function toggleTranscriptView() {
+        const box = document.getElementById('transcriptContentBox');
+        const wrapper = document.getElementById('transcriptWrapper');
+        const btn = document.getElementById('toggleTranscriptBtn');
+        wrapper.classList.remove('hidden');
+        if (box.classList.contains('hidden')) {
+            box.classList.remove('hidden');
+            btn.innerText = "Hide Video Transcript";
+        } else {
+            box.classList.add('hidden');
+            btn.innerText = "Show Video Transcript";
+        }
+    }
+
+    function calculateTotalScore() {
+        let tech = Number(document.getElementById('critTechnical').value);
+        let pres = Number(document.getElementById('critPresentation').value);
+        let rule = Number(document.getElementById('critRules').value);
+
+        const lblTechExcel = document.getElementById('lblTechExcel');
+        const lblPresentation = document.getElementById('lblPresentation');
+        const cbTechExcel = document.getElementById('bonusTechExcel');
+        const cbPresentation = document.getElementById('bonusPresentation');
+
+        if (tech < 4) {
+            lblTechExcel.classList.add('disabled-label');
+            cbTechExcel.checked = false;
+            cbTechExcel.disabled = true;
+        } else {
+            lblTechExcel.classList.remove('disabled-label');
+            cbTechExcel.disabled = false;
+        }
+
+        if (pres < 4) {
+            lblPresentation.classList.add('disabled-label');
+            cbPresentation.checked = false;
+            cbPresentation.disabled = true;
+        } else {
+            lblPresentation.classList.remove('disabled-label');
+            cbPresentation.disabled = false;
+        }
+
+        let grandTotal = tech + pres + rule;
+        document.getElementById('aggregateScore').innerText = grandTotal;
+        return grandTotal;
+    }
+
+    async function submitEvaluation() {
+        let scoreValue = calculateTotalScore();
+        let techScore = Number(document.getElementById('critTechnical').value);
+        let presScore = Number(document.getElementById('critPresentation').value);
+        let ruleScore = Number(document.getElementById('critRules').value);
+
+        const isTechInvalid = (techScore < 4 && document.getElementById('bonusTechExcel').checked);
+        const isPresInvalid = (presScore < 4 && document.getElementById('bonusPresentation').checked);
+
+        if (isTechInvalid || isPresInvalid) {
+            let errorMsg = "Submission blocked:\n";
+            if (isTechInvalid) errorMsg += "• Uncheck 'Technical Excellence' (requires 4pt Technical Content).\n";
+            if (isPresInvalid) errorMsg += "• Uncheck 'Impactful Presentation' (requires 4pt Presentation Quality).\n";
+            showNotification(errorMsg, "warning", 6000);
+            return;
+        }
+
+        let payload = {
+            email: currentEmail,
+            projectId: currentActiveProjectId,
+            totalScore: scoreValue,
+            isSkip: false,
+            isReevaluation: isReevaluating,
+            bonusIngenuity: document.getElementById('bonusIngenuity').checked ? "YES" : "NO",
+            bonusTechExcel: document.getElementById('bonusTechExcel').checked ? "YES" : "NO",
+            bonusSocial: document.getElementById('bonusSocial').checked ? "YES" : "NO",
+            bonusPresentation: document.getElementById('bonusPresentation').checked ? "YES" : "NO",
+            critRules: ruleScore,
+            critTech: techScore,
+            critPres: presScore
+        };
+
+        const btnSubmit = document.getElementById('btnSubmit');
+        btnSubmit.innerText = isReevaluating ? "Updating..." : "Submitting...";
+        btnSubmit.disabled = true;
+
+        try {
+            let res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            });
+            let json = await res.json();
+
+            if(json.status === "success") {
+                showNotification(isReevaluating ? "Evaluation successfully updated!" : "Evaluation sync successful!", "success");
+                if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
+
+                // Update local history cache without an extra GET request
+                let newHistoryItem = {
+                    projectId: currentActiveProjectId,
+                    totalScore: scoreValue,
+                    critRules: payload.critRules,
+                    critTech: payload.critTech,
+                    critPres: payload.critPres,
+                    bIngenuity: payload.bonusIngenuity,
+                    bTechExcel: payload.bonusTechExcel,
+                    bSocial: payload.bonusSocial,
+                    bPresentation: payload.bonusPresentation
+                };
+
+                if (isReevaluating) {
+                    let existing = globalHistory.find(h => h.projectId == currentActiveProjectId);
+                    if (existing) Object.assign(existing, newHistoryItem);
+                } else if (pendingNewVideo) {
+                    newHistoryItem.projectName = pendingNewVideo.projectName;
+                    newHistoryItem.videoUrl = pendingNewVideo.videoUrl;
+                    newHistoryItem.category = pendingNewVideo.category;
+                    newHistoryItem.transcript = pendingNewVideo.transcript;
+                    globalHistory.unshift(newHistoryItem);
+                }
+
+                localStorage.setItem(`history_${currentEmail}`, JSON.stringify(globalHistory));
+                renderSidebar();
+
+                if (isReevaluating) {
+                    restorePendingVideo();
+                } else {
+                    pendingNewVideo = null;
+                    fetchNextVideo();
+                }
+            } else { showNotification(json.message, "error"); }
+        } catch(e) {
+            showNotification("Submission error communicating payload.", "error");
+        } finally {
+            if (!btnSubmit.classList.contains('cooldown')) {
+                btnSubmit.innerText = isReevaluating ? "Update Evaluation" : "Submit Evaluation";
+                btnSubmit.disabled = false;
+            }
+        }
+    }
+
+    function startSubmitCooldown() {
+        const btnSubmit = document.getElementById('btnSubmit');
+        let secondsRemaining = SUBMIT_COOLDOWN_SECONDS;
+
+        if (submitCooldownTimer) clearInterval(submitCooldownTimer);
+        btnSubmit.classList.add('cooldown');
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = `Wait ${Math.floor(secondsRemaining / 60)}:00 To Submit`;
+
+        submitCooldownTimer = setInterval(() => {
+            secondsRemaining -= 1;
+            if (secondsRemaining <= 0) {
+                clearInterval(submitCooldownTimer);
+                submitCooldownTimer = null;
+                btnSubmit.classList.remove('cooldown');
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = isReevaluating ? "Update Evaluation" : "Submit Evaluation";
+                return;
+            }
+
+            const minutes = Math.floor(secondsRemaining / 60);
+            const seconds = String(secondsRemaining % 60).padStart(2, '0');
+            btnSubmit.innerText = `Wait ${minutes}:${seconds} To Submit`;
+        }, 1000);
+    }
+
+    function promptSkipVideo() { document.getElementById('skipModalOverlay').classList.remove('hidden'); }
+    function closeSkipModal() { document.getElementById('skipModalOverlay').classList.add('hidden'); }
+
+    async function executeSkip() {
+        const btnConfirmSkip = document.getElementById('btnConfirmSkip');
+        btnConfirmSkip.innerText = "Skipping...";
+        btnConfirmSkip.disabled = true;
+
+        let payload = {
+            email: currentEmail, projectId: currentActiveProjectId, totalScore: "SKIPPED",
+            isSkip: true, isReevaluation: false, bonusIngenuity: "NO", bonusTechExcel: "NO",
+            bonusSocial: "NO", bonusPresentation: "NO", critRules: 1, critTech: 1, critPres: 1
+        };
+        try {
+            let res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+            let json = await res.json();
+
+            if(json.status === "success") {
+                showNotification("Video skipped successfully.", "info");
+                if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
+
+                let newHistoryItem = {
+                    projectId: currentActiveProjectId,
+                    totalScore: "SKIPPED",
+                    critRules: 1, critTech: 1, critPres: 1,
+                    bIngenuity: "NO", bTechExcel: "NO", bSocial: "NO", bPresentation: "NO"
+                };
+                if (pendingNewVideo) {
+                    newHistoryItem.projectName = pendingNewVideo.projectName;
+                    newHistoryItem.videoUrl = pendingNewVideo.videoUrl;
+                    newHistoryItem.category = pendingNewVideo.category;
+                    newHistoryItem.transcript = pendingNewVideo.transcript;
+                    globalHistory.unshift(newHistoryItem);
+                }
+                localStorage.setItem(`history_${currentEmail}`, JSON.stringify(globalHistory));
+                renderSidebar();
+
+                pendingNewVideo = null;
+                fetchNextVideo();
+            } else { showNotification(json.message, "error"); }
+        } catch(e) { showNotification("Error trying to process video skip action.", "error"); }
+        finally {
+            btnConfirmSkip.innerText = "Yes, Skip";
+            btnConfirmSkip.disabled = false;
+            closeSkipModal();
+        }
+    }
+
+    function promptReportVideo() { document.getElementById('reportModalOverlay').classList.remove('hidden'); }
+    function closeReportModal() { document.getElementById('reportModalOverlay').classList.add('hidden'); }
+
+    async function executeReport(reason) {
+        const modalButtons = document.querySelectorAll('#reportModalOverlay button');
+        modalButtons.forEach(b => b.disabled = true);
+
+        let payload = {
+            email: currentEmail, projectId: currentActiveProjectId, totalScore: reason,
+            isSkip: false, isReport: true, reportReason: reason, isReevaluation: false,
+            bonusIngenuity: "NO", bonusTechExcel: "NO",
+            bonusSocial: "NO", bonusPresentation: "NO", critRules: 1, critTech: 1, critPres: 1
+        };
+        try {
+            let res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+            let json = await res.json();
+
+            if(json.status === "success") {
+                showNotification(json.message, "info");
+                if(json.updatedCount !== undefined) document.getElementById('userStatsCapsule').innerText = `Videos Rated: ${json.updatedCount}`;
+
+                let newHistoryItem = {
+                    projectId: currentActiveProjectId,
+                    totalScore: reason,
+                    critRules: 1, critTech: 1, critPres: 1,
+                    bIngenuity: "NO", bTechExcel: "NO", bSocial: "NO", bPresentation: "NO"
+                };
+                if (pendingNewVideo) {
+                    newHistoryItem.projectName = pendingNewVideo.projectName;
+                    newHistoryItem.videoUrl = pendingNewVideo.videoUrl;
+                    newHistoryItem.category = pendingNewVideo.category;
+                    newHistoryItem.transcript = pendingNewVideo.transcript;
+                    globalHistory.unshift(newHistoryItem);
+                }
+                localStorage.setItem(`history_${currentEmail}`, JSON.stringify(globalHistory));
+                renderSidebar();
+
+                pendingNewVideo = null;
+                fetchNextVideo();
+            } else { showNotification(json.message, "error"); }
+        } catch(e) { showNotification("Error trying to process video report action.", "error"); }
+        finally {
+            modalButtons.forEach(b => b.disabled = false);
+            closeReportModal();
+        }
+    }
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IEEE SSCS Evaluation Portal</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; color: #333; transition: padding-left 0.3s ease; }
+        body.sidebar-active { padding-left: 280px; }
+        .container { max-width: 850px; margin: 30px auto; background: #ffffff; padding: 35px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid #ba0c2f; position: relative; }
+        h2 { border-bottom: 1px solid #e5e5e5; padding-bottom: 12px; color: #242424; margin-top: 0; font-weight: 600; font-size: 1.6rem; letter-spacing: -0.3px; }
+        h3 { color: #242424; margin-top: 30px; font-size: 1.2rem; font-weight: 600; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #444; font-size: 0.95rem; }
+        input[type="email"], input[type="password"], select { width: 100%; padding: 12px; border: 1px solid #cccccc; border-radius: 4px; box-sizing: border-box; font-size: 15px; background-color: #ffffff; color: #333; transition: border-color 0.15s ease; }
+        input[type="email"]:focus, input[type="password"]:focus, select:focus { border-color: #ba0c2f; outline: none; }
+
+        button { background: #ba0c2f; color: #ffffff; border: none; padding: 14px 24px; font-size: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; transition: background 0.15s ease; }
+        button:hover:not(:disabled) { background: #930a25; }
+        button:disabled { background: #888; cursor: not-allowed; }
+
+        .btn-outline { background: transparent; color: #ba0c2f; border: 1px solid #ba0c2f; margin-top: 15px; transition: all 0.15s ease; }
+        .btn-outline:hover:not(:disabled) { background: #ba0c2f; color: #ffffff; }
+
+        /* Sidebar Styles */
+        #sidebarToggle { position: fixed; top: 15px; left: 15px; z-index: 1001; background: #242424; color: #fff; border: none; padding: 10px 14px; font-size: 1.4rem; border-radius: 4px; cursor: pointer; transition: background 0.15s ease; width: auto; line-height: 1; }
+        #sidebarToggle:hover { background: #444; }
+
+        #sidebarMenu { display: flex; flex-direction: column; position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: #ffffff; border-right: 1px solid #e5e5e5; box-shadow: 2px 0 8px rgba(0,0,0,0.05); padding: 70px 20px 25px 20px; box-sizing: border-box; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; }
+        #sidebarMenu.active { transform: translateX(0); }
+        .sidebar-header { color: #242424; font-weight: 600; margin-top: 0; margin-bottom: 15px; padding-bottom: 12px; font-size: 1.15rem; border-bottom: 2px solid #ba0c2f; }
+
+        #historyList { flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
+        .history-item { background: #f8f9fa; border: 1px solid #e5e5e5; border-radius: 4px; padding: 12px; margin-bottom: 12px; cursor: pointer; transition: all 0.15s ease; }
+        .history-item:hover { border-color: #ba0c2f; background: #fff5f5; }
+        .history-item.active-item { border-left: 4px solid #ba0c2f; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .history-item.skipped-item { border-left: 4px solid #6c757d; opacity: 0.85; }
+        .history-item.reported-item { border-left: 4px solid #e07b00; opacity: 0.9; }
+        .history-title { font-weight: 600; font-size: 0.9rem; color: #242424; margin-bottom: 5px; line-height: 1.3; }
+        .history-score { font-size: 0.85rem; color: #777; font-weight: 500; }
+
+        .return-btn { background: #555555; font-size: 0.85rem; padding: 12px; margin-top: auto; }
+        .return-btn:hover { background: #333333; }
+
+        .hidden { display: none !important; }
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 25px 0 15px 0; border-radius: 4px; background: #000; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+
+        .video-links-row { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+
+        .btn-transcript { background: #242424; color: #fff; border: 1px solid #444; padding: 10px 18px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.15s ease; width: auto; text-transform: none; letter-spacing: normal; }
+        .btn-transcript:hover { background: #444444; }
+
+        .btn-video-link { background: #ffffff; color: #ba0c2f; border: 1px solid #ba0c2f; padding: 10px 18px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.15s ease; width: auto; text-transform: none; letter-spacing: normal; text-decoration: none; display: inline-block; }
+        .btn-video-link:hover { background: #ba0c2f; color: #ffffff; }
+
+        .transcript-box { background: #f1f3f5; border: 1px solid #e5e5e5; border-radius: 4px; padding: 15px; margin-bottom: 25px; max-height: 250px; overflow-y: auto; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; color: #444; }
+
+        .rubric-section, .bonus-section { background: #ffffff; padding: 18px; border: 1px solid #e5e5e5; border-left: 4px solid #ba0c2f; margin-bottom: 15px; border-radius: 4px; }
+        .score-display { font-size: 1.25rem; font-weight: 600; margin-top: 15px; color: #ffffff; background: #000000; padding: 12px 20px; float: right; border: 1px solid #d0daf0; border-radius: 24px;}
+        .clear { clear: both; }
+        .checkbox-container { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+        .checkbox-container label { display: flex; align-items: center; gap: 8px; font-weight: 500; color: #555; cursor: pointer; font-size: 0.9rem; }
+        .checkbox-container input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+        .checkbox-container label.disabled-label { opacity: 0.5; cursor: not-allowed; }
+        .checkbox-container input[type="checkbox"]:disabled { cursor: not-allowed; }
+
+        .action-button-group { display: flex; gap: 15px; margin-top: 25px; }
+        .btn-submit { background: #ba0c2f; flex: 2; }
+        .btn-submit.cooldown { background: #888; opacity: 0.5; }
+        .btn-skip { background: #6c757d; flex: 1; }
+        .btn-skip:hover:not(:disabled) { background: #5a6268; }
+        .btn-report { background: #e07b00; flex: 1; }
+        .btn-report:hover:not(:disabled) { background: #c46c00; }
+
+        .badge-container { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; white-space: nowrap; }
+        .meta-tag { font-weight: 600; color:#ffffff; background: #000000; padding: 6px 14px; border-radius: 4px; font-size: 0.85rem; border: 1px solid #d0daf0; }
+        .stats-badge { font-weight: 600; color:#ba0c2f; background: #fff5f5; padding: 6px 14px; border-radius: 4px; font-size: 0.85rem; border: 1px solid #ffcdd2; }
+        .category-badge { display: inline-block; background: #242424; color: #ffffff; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 4px; margin-top: 8px; letter-spacing: 0.5px; }
+
+        .leaderboard-wrapper { margin-top: 35px; border-top: 1px solid #e5e5e5; padding-top: 25px; }
+        .leaderboard-wrapper h3 { margin-top: 0; margin-bottom: 15px; font-size: 1.15rem; color: #242424; display: flex; align-items: center; gap: 6px; }
+        .leaderboard-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border: 1px solid #eee; background-color: #fff; }
+        .leaderboard-table th { text-align: left; padding: 10px; background: #f8f9fa; color: #444; font-weight: 600; border-bottom: 2px solid #e5e5e5; }
+        .leaderboard-table td { padding: 10px; border-bottom: 1px solid #eee; color: #555; }
+        .leaderboard-table tr:nth-child(1) td { font-weight: 700; color: #ba0c2f; background: #fffdfd; }
+        .rank-index { width: 45px; font-weight: 600; text-align: center; color: #777; }
+        .count-column { text-align: right; padding-right: 15px !important; font-weight: 600; }
+        .text-center { text-align: center; color: #888; padding: 20px !important; }
+
+        #notificationBox { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 350px; width: 100%; }
+        .toast { background: #ffffff; color: #242424; padding: 14px 18px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-left: 5px solid #242424; font-size: 0.9rem; line-height: 1.4; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; white-space: pre-line; }
+        .toast.success { border-left-color: #28a745; }
+        .toast.error { border-left-color: #ba0c2f; }
+        .toast.warning { border-left-color: #ffc107; }
+        .toast.info { border-left-color: #17a2b8; }
+        .toast .toast-close { background: transparent; border: none; color: #888; font-size: 1.1rem; cursor: pointer; padding: 0; width: auto; text-transform: none; line-height: 1; }
+        .toast .toast-close:hover { color: #000; background: transparent; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .modal-box { background: #ffffff; padding: 30px; border-radius: 4px; max-width: 450px; width: 90%; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border-top: 4px solid #ba0c2f; text-align: left; }
+        .modal-box h3 { margin-top: 0; border-bottom: none; font-size: 1.4rem; color: #ba0c2f; }
+        .modal-box p { color: #444; font-size: 1rem; line-height: 1.5; margin-bottom: 25px; }
+        .report-reason-btn { width: 100%; background: #242424; margin-bottom: 10px; }
+        .report-reason-btn:hover:not(:disabled) { background: #444444; }
+
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
+
+        @media (max-width: 1100px) {
+            body.sidebar-active { padding-left: 20px; }
+            #sidebarMenu { box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+        }
     </style>
 </head>
 <body>
